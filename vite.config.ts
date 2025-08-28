@@ -1,6 +1,6 @@
 ﻿import { defineConfig } from 'vite'
 
-export default defineConfig({
+export default defineConfig({\n  css: { postcss: {} },
   build: {
     lib: {
       entry: 'src/index.ts',
@@ -18,3 +18,4 @@ export default defineConfig({
     open: '/demo/index.html'
   }
 })
+
