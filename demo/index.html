@@ -4,10 +4,32 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>JsonTable Demo</title>
-    <style>html,body,#app{height:100%;margin:0}#app{padding:16px;box-sizing:border-box}</style>
+    <style>
+      html,body,#app{height:100%;margin:0}
+      #app{padding:16px;box-sizing:border-box}
+      .toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
+      .panel{display:grid;grid-template-columns:1fr;gap:8px}
+      textarea, pre{width:100%;min-height:120px;padding:8px;box-sizing:border-box;border:1px solid #ddd;border-radius:6px;background:#fafafa}
+      pre{margin:0}
+      .caps{font:12px/1.4 system-ui;color:#666}
+    </style>
   </head>
   <body>
     <div id="app"></div>
+    <div class="toolbar">
+      <button id="btn-header">Generate Header</button>
+      <button id="btn-csv">Generate CSV</button>
+    </div>
+    <div class="panel">
+      <div>
+        <div class="caps">Header (dynamic)</div>
+        <pre id="out-header"></pre>
+      </div>
+      <div>
+        <div class="caps">CSV Preview</div>
+        <textarea id="out-csv" placeholder=", separated CSV"></textarea>
+      </div>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
