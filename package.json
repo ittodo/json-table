@@ -23,7 +23,7 @@
                     "typecheck":  "tsc --noEmit",
                     "build:demo":  "vite build demo --outDir dist-demo --base=/json-table/",
                     "dev":  "vite",
-                    "preview:demo":  "node scripts/serve-demo.mjs"
+                    "preview:demo":  "npm run build:demo \u0026\u0026 node scripts/serve-demo.mjs"
                 },
     "keywords":  [
                      "json",

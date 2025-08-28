@@ -39,6 +39,6 @@ const server = http.createServer((req, res) => {
   })
 })
 
-server.listen(port, () => {
-  console.log(`Serving dist-demo on http://localhost:${port}`)
+server.listen(port, () => {\n  console.log(`Serving dist-demo on http://localhost:${port}`)\n  console.log(`Root: ${root}`)
 })
+
