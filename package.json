@@ -22,7 +22,8 @@
                     "lint":  "eslint .",
                     "typecheck":  "tsc --noEmit",
                     "build:demo":  "vite build demo --outDir dist-demo --base=/json-table/",
-                    "dev":  "vite"
+                    "dev":  "vite",
+                    "preview:demo":  "node scripts/serve-demo.mjs"
                 },
     "keywords":  [
                      "json",
