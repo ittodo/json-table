@@ -1,5 +1,7 @@
 ﻿# JsonTable
 
+[![CI](https://github.com/ittodo/json-table/actions/workflows/ci.yml/badge.svg)](https://github.com/ittodo/json-table/actions/workflows/ci.yml) [Demo](https://ittodo.github.io/json-table/)
+
 Embeddable JSON ↔ Table widget. Toggle and edit data in JSON or a table (grid) view with dynamic list expansion (K), reversible transforms, and header‑indexed parsing.
 
 - Name: JsonTable (UMD global: `JsonTable`)
@@ -24,4 +26,5 @@ See `docs/proposal.md` for the full proposal (architecture, API, CI/CD, next ste
 - Vite: a fast web build tool and dev server. It runs a local preview (`npm run dev`) and builds optimized bundles for production (`npm run build`).
 
 You don’t need deep web knowledge to consume the widget. We’ll ship a single UMD file you can drop into any page and use via a global `JsonTable.init(...)` API.
+
 
