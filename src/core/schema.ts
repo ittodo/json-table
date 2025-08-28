@@ -1,0 +1,91 @@
+﻿export type Json = any
+
+export interface ListMaxes { [root: string]: number }
+
+export function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
+}
+
+function joinPath(base: string, seg: string): string {
+  return base ? `${base}.${seg}` : seg
+}
+
+export interface ScanResult {
+  prototypeHeader: string[] // includes list roots with [0] placeholders
+  listMaxes: ListMaxes
+}
+
+/**
+ * Scan JSON value(s) to produce a prototype header and list maxes.
+ * Prototype header uses [0] as placeholder for list indices, e.g., items[0].id.
+ */
+export function scanSchema(json: Json | Json[]): ScanResult {
+  const arr = Array.isArray(json) ? json : [json]
+  const proto = new Set<string>()
+  const listMaxes: ListMaxes = {}
+
+  function walk(val: any, prefix: string) {
+    if (Array.isArray(val)) {
+      const rootName = prefix
+      const k = val.length
+      if (rootName) {
+        listMaxes[rootName] = Math.max(listMaxes[rootName] || 0, k)
+      }
+      // collect inner tails using [0] placeholder
+      if (k > 0) {
+        const first = val[0]
+        walk(first, `${prefix}[0]`)
+      } else {
+        // empty list: keep placeholder root itself
+        if (prefix) proto.add(prefix)
+      }
+      return
+    }
+    if (isPlainObject(val)) {
+      for (const [k, v] of Object.entries(val)) {
+        walk(v, joinPath(prefix, k))
+      }
+      return
+    }
+    // primitive/leaf
+    if (prefix) proto.add(prefix)
+  }
+
+  for (const it of arr) walk(it, '')
+
+  return { prototypeHeader: Array.from(proto).sort(), listMaxes }
+}
+
+/** Build concrete header by expanding [0] placeholders up to listMaxes */
+export function buildHeader(prototypeHeader: string[], listMaxes: ListMaxes): string[] {
+  const out: string[] = []
+  for (const col of prototypeHeader) {
+    const m = col.match(/^(.*)\[(\d+)\](\..*)?$/)
+    if (!m) { out.push(col); continue }
+    const root = m[1]
+    const tail = m[3] || ''
+    const k = listMaxes[root] || 0
+    for (let i = 0; i < k; i++) {
+      out.push(`${root}[${i}]${tail}`)
+    }
+  }
+  return out
+}
+
+/** Tokenize a column path like items[2].id → [ ['items',2], 'id' ] */
+export type PathToken = { key: string; index?: number }
+
+export function parsePath(col: string): PathToken[] {
+  const parts = col.split('.')
+  const tokens: PathToken[] = []
+  for (const p of parts) {
+    const m = p.match(/^(.*?)(?:\[(\d+)\])?$/)
+    if (m) {
+      const key = m[1]
+      const idx = m[2] !== undefined ? Number(m[2]) : undefined
+      if (key) tokens.push({ key, index: idx })
+      else if (idx !== undefined) tokens.push({ key: '', index: idx })
+    }
+  }
+  return tokens
+}

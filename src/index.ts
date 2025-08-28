@@ -53,3 +53,8 @@ export function init(container: HTMLElement, options: InitOptions = {}): JsonTab
 
   return api
 }
+
+export * as Schema from './core/schema'
+export * as Flatten from './core/flatten'
+export * as Csv from './core/export'
+export * as Validate from './core/validate'
