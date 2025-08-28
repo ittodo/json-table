@@ -19,3 +19,4 @@ describe('flatten/unflatten', () => {
     expect(json2.items[0].id).toBe('100')
   })
 })
+
