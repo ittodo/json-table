@@ -15,13 +15,14 @@
                           }
                 },
     "scripts":  {
-                    "dev":  "vite",
+                    "preview":  "vite preview",
+                    "test":  "vitest run",
+                    "build:demo:local":  "vite build demo --outDir dist",
                     "build":  "vite build \u0026\u0026 tsc -p tsconfig.build.json",
-                    "build:demo":  "vite build demo --outDir dist-demo --base=/json-table/",
-                    "preview": "vite preview --outDir dist-demo",
-                    "typecheck":  "tsc --noEmit",
                     "lint":  "eslint .",
-                    "test":  "vitest run"
+                    "typecheck":  "tsc --noEmit",
+                    "build:demo":  "vite build demo --outDir dist-demo --base=/json-table/",
+                    "dev":  "vite"
                 },
     "keywords":  [
                      "json",
@@ -43,4 +44,3 @@
                             "vitest":  "^2.0.5"
                         }
 }
-
