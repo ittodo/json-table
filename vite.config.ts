@@ -6,7 +6,7 @@ export default defineConfig({
     lib: {
       entry: 'src/index.ts',
       name: 'JsonTable',
-      fileName: (format) => jsontable..js,
+      fileName: (format) => `jsontable.${format}.js`,
       formats: ['es', 'umd']
     },
     rollupOptions: {
