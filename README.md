@@ -19,3 +19,9 @@ See `docs/proposal.md` for the full proposal (architecture, API, CI/CD, next ste
 - Implement core modules: schema infer, flatten, unflatten, validators, exporters
 - CI (lint/typecheck/test/build) and Pages demo deploy
 
+## What are Vite and TypeScript?
+- TypeScript (TS): JavaScript with types. It compiles to plain JavaScript but catches many errors early and improves tooling.
+- Vite: a fast web build tool and dev server. It runs a local preview (`npm run dev`) and builds optimized bundles for production (`npm run build`).
+
+You don’t need deep web knowledge to consume the widget. We’ll ship a single UMD file you can drop into any page and use via a global `JsonTable.init(...)` API.
+
