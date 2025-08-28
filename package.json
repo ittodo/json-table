@@ -1,4 +1,4 @@
-{
+﻿{
     "name":  "json-table",
     "version":  "0.1.0",
     "private":  false,
@@ -18,7 +18,7 @@
                     "dev":  "vite",
                     "build":  "vite build \u0026\u0026 tsc -p tsconfig.build.json",
                     "build:demo":  "vite build demo --outDir dist-demo --base=/json-table/",
-                    "preview":  "vite preview dist-demo",
+                    "preview": "vite preview --outDir dist-demo",
                     "typecheck":  "tsc --noEmit",
                     "lint":  "eslint .",
                     "test":  "vitest run"
@@ -43,3 +43,4 @@
                             "vitest":  "^2.0.5"
                         }
 }
+
