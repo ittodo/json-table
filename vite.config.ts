@@ -1,11 +1,12 @@
 ﻿import { defineConfig } from 'vite'
 
-export default defineConfig({\n  css: { postcss: {} },
+export default defineConfig({
+  css: { postcss: {} },
   build: {
     lib: {
       entry: 'src/index.ts',
       name: 'JsonTable',
-      fileName: (format) => `jsontable.${format}.js`,
+      fileName: (format) => jsontable..js,
       formats: ['es', 'umd']
     },
     rollupOptions: {
@@ -18,4 +19,3 @@ export default defineConfig({\n  css: { postcss: {} },
     open: '/demo/index.html'
   }
 })
-
