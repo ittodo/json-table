@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect } from 'vitest'
-import { Flatten } from './index'
+import { Flatten } from '../index'
 
 describe('flatten/unflatten', () => {
   const obj = {
