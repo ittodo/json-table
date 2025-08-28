@@ -13,26 +13,53 @@ function getAt(obj: any, tokens: PathToken[]): any {
   return cur
 }
 
-function setAt(obj: any, tokens: PathToken[], value: any) {
-  let cur = obj
+function setAt(root: any, tokens: PathToken[], value: any) {
+  let cur = root
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]
     const last = i === tokens.length - 1
-    if (t.key) {
-      if (cur[t.key] === undefined) cur[t.key] = t.index !== undefined ? [] : (last ? value : {})
+
+    // segment with key only
+    if (t.key && t.index === undefined) {
+      if (last) {
+        cur[t.key] = value
+        return
+      }
+      if (cur[t.key] === undefined || typeof cur[t.key] !== 'object' || Array.isArray(cur[t.key])) {
+        cur[t.key] = {}
+      }
       cur = cur[t.key]
+      continue
     }
-    if (t.index !== undefined) {
-      if (!Array.isArray(cur)) cur = (cur[t.key!] = [])
+
+    // segment with key + index (array under key)
+    if (t.key && t.index !== undefined) {
+      if (!Array.isArray(cur[t.key])) cur[t.key] = []
+      if (last) {
+        cur[t.key][t.index] = value
+        return
+      }
+      if (cur[t.key][t.index] === undefined || typeof cur[t.key][t.index] !== 'object' || Array.isArray(cur[t.key][t.index])) {
+        cur[t.key][t.index] = {}
+      }
+      cur = cur[t.key][t.index]
+      continue
+    }
+
+    // segment with only index (not expected from parsePath, but safe-guard)
+    if (!t.key && t.index !== undefined) {
+      if (!Array.isArray(cur)) {
+        // cannot attach to array without a key; skip
+        return
+      }
       if (last) {
         cur[t.index] = value
-      } else {
-        if (cur[t.index] === undefined) cur[t.index] = {}
-        cur = cur[t.index]
+        return
       }
-    } else if (last && t.key) {
-      // if last and only key, assign
-      cur[t.key] = value
+      if (cur[t.index] === undefined || typeof cur[t.index] !== 'object' || Array.isArray(cur[t.index])) {
+        cur[t.index] = {}
+      }
+      cur = cur[t.index]
     }
   }
 }
