@@ -189,6 +189,25 @@ btnDownload.addEventListener('click', () => {
   URL.revokeObjectURL(url)
 })
 
+// Allow editing header lines in the preview box
+function applyHeaderPreviewEdits() {
+  const lines = (outHeader.textContent || '')
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(Boolean)
+  if (!lines.length) return
+  lastHeader = lines
+  // normalize rows to new header width
+  lastRows = lastRows.map(r => {
+    const rr = r.slice(0, lines.length)
+    while (rr.length < lines.length) rr.push('')
+    return rr
+  })
+  renderTable(lastHeader, lastRows, true)
+}
+
+outHeader.addEventListener('blur', applyHeaderPreviewEdits)
+
 
 
 
