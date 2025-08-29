@@ -17,8 +17,14 @@ const mime = {
   ".map": "application/json; charset=utf-8"
 }
 
+const BASE_PREFIX = "/json-table/" // matches vite --base for demo build
+
 const server = http.createServer((req, res) => {
-  const reqUrl = decodeURIComponent(req.url || "/")
+  let reqUrl = decodeURIComponent(req.url || "/")
+  // Rewrite base-prefixed paths (e.g., /json-table/assets/*) to local files
+  if (reqUrl.startsWith(BASE_PREFIX)) {
+    reqUrl = reqUrl.slice(BASE_PREFIX.length - 1) // keep leading '/'
+  }
   const rel = reqUrl.replace(/^\//, "") || "index.html"
   const filePath = path.join(root, rel)
   fs.stat(filePath, (err, stat) => {
