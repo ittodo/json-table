@@ -195,10 +195,10 @@ function startEdit(r: number, c: number, edge: 'start'|'end', seed?: string) {
   editCell = { r, c }
   const td = getCell(r, c)
   if (!td) return
-  ensureCellVisible(r, c)
-  const rect = td.getBoundingClientRect()
-  overlay.style.display = 'block'
-  overlay.style.left = `${rect.left + window.scrollX}px`
+  overlay.style.left = `${Math.floor(rect.left + window.scrollX)}px`
+  overlay.style.top = `${Math.floor(rect.top + window.scrollY)}px`
+  overlay.style.width = `${Math.ceil(rect.width)}px`
+  overlay.style.height = `${Math.ceil(rect.height)}px`
   overlay.style.top = `${rect.top + window.scrollY}px`
   overlay.style.width = `${rect.width - 2}px`
   overlay.style.height = `${rect.height - 2}px`
@@ -493,4 +493,7 @@ function ensureCellVisible(r: number, c: number) {
   if (rect.right > vw) wx = rect.right - vw + 8
   else if (rect.left < 0) wx = rect.left - 8
   if (wx || wy) window.scrollBy({ left: wx, top: wy, behavior: 'auto' })
+
+
+
 }
