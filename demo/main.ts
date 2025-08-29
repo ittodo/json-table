@@ -126,75 +126,64 @@ function addExtraIndexPerList(header: string[], extra = 1): string[] {
   return out
 }
 
-// Normalize and propagate a child subtree (e.g., `.p[...]`) so that
-// - every sibling index gets the subtree columns
-// - all subtree columns for each index are placed immediately after that index's base columns
-function normalizeAndPropagateChildSubtree(header: string[], childKey = 'p'): string[] {
-  const rx = /^(.*?)\[(\d+)\](.*)$/
+// Normalize and propagate child subtrees (e.g., `.p[...]`, `.q[...]`) so that
+// 1) every sibling index gets the union of child subtree tails, and
+// 2) for each index, child subtrees are placed right after that index's base columns,
+//    in the order discovered in the original header.
+function normalizeAndPropagateChildSubtree(header: string[], childKeys: string | string[] = 'p'): string[] {
+  const keys = Array.isArray(childKeys) ? childKeys : [childKeys]
+  const rxFirst = /^(.*?)\[(\d+)\](.*)$/ // split at first [] → parent, index, tail
   type Group = {
-    indices: Set<number>
-    unionTails: string[]
-    childByIdx: Map<number, string[]>
+    parent: string
+    indices: number[] // in appearance order
+    firstPos: number
+    baseByIdx: Map<number, string[]> // base cols (non-child) per index in original order
+    unionTails: string[] // union of child tails in original order
   }
   const groups = new Map<string, Group>()
-  // collect information
+  // discovery pass: collect base cols and union child tails
   for (let i = 0; i < header.length; i++) {
     const col = header[i]
-    const m = col.match(rx)
+    const m = col.match(rxFirst)
     if (!m) continue
     const parent = m[1]
     const idx = Number(m[2])
     const tail = m[3] || ''
     let g = groups.get(parent)
-    if (!g) g = { indices: new Set<number>(), unionTails: [], childByIdx: new Map() }
-    g.indices.add(idx)
-    if (tail.startsWith('.' + childKey)) {
-      const arr = g.childByIdx.get(idx) || []
-      if (!arr.includes(tail)) arr.push(tail)
-      g.childByIdx.set(idx, arr)
+    if (!g) g = { parent, indices: [], firstPos: i, baseByIdx: new Map(), unionTails: [] }
+    if (!g.indices.includes(idx)) g.indices.push(idx)
+    g.firstPos = Math.min(g.firstPos, i)
+    const isChildTail = keys.some(k => tail.startsWith('.' + k))
+    if (isChildTail) {
       if (!g.unionTails.includes(tail)) g.unionTails.push(tail)
+    } else {
+      const base = g.baseByIdx.get(idx) || []
+      base.push(col)
+      g.baseByIdx.set(idx, base)
     }
     groups.set(parent, g)
   }
-  if (groups.size === 0) return header
-  // remove all existing child subtree columns to re-insert at proper places
+  if (!groups.size) return header
+  // remove all columns belonging to these parents; rebuild normalized chunks
+  const parents = Array.from(groups.keys())
   const remove = new Set<string>()
-  for (const [parent, g] of groups) {
-    for (const [idx, tails] of g.childByIdx.entries()) {
-      for (const t of tails) remove.add(`${parent}[${idx}]${t}`)
-    }
+  for (const col of header) {
+    const m = col.match(rxFirst)
+    if (m && parents.includes(m[1])) remove.add(col)
   }
   const filtered = header.filter(col => !remove.has(col))
-  // helper to find last position of base columns for a given index (excluding childKey subtree)
-  function findLastBasePos(hdr: string[], parent: string, idx: number): number | null {
-    const basePrefix = `${parent}[${idx}]`
-    let last: number | null = null
-    for (let i = 0; i < hdr.length; i++) {
-      const col = hdr[i]
-      if (!col.startsWith(basePrefix)) continue
-      const m = col.match(rx)
-      if (!m) continue
-      const tail = m[3] || ''
-      if (!tail.startsWith('.' + childKey)) last = i
-    }
-    return last
-  }
-  // plan insertions: for each index, insert union tails after its base
-  type Plan = { pos: number, cols: string[] }
-  const plans: Plan[] = []
-  for (const [parent, g] of groups) {
-    for (const idx of g.indices) {
-      const pos = findLastBasePos(filtered, parent, idx)
-      if (pos == null) continue
-      const cols: string[] = []
-      for (const t of g.unionTails) cols.push(`${parent}[${idx}]${t}`)
-      plans.push({ pos, cols })
-    }
-  }
-  if (!plans.length) return filtered
-  plans.sort((a, b) => b.pos - a.pos)
+  // build normalized chunks and insert at earliest parent position
+  const chunks = parents.map(p => groups.get(p)!).sort((a, b) => b.firstPos - a.firstPos)
   const out = filtered.slice()
-  for (const p of plans) out.splice(p.pos + 1, 0, ...p.cols)
+  for (const g of chunks) {
+    const cols: string[] = []
+    for (const idx of g.indices) {
+      const base = g.baseByIdx.get(idx) || []
+      cols.push(...base)
+      for (const t of g.unionTails) cols.push(`${g.parent}[${idx}]${t}`)
+    }
+    out.splice(g.firstPos, 0, ...cols)
+  }
   return out
 }
 
