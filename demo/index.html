@@ -12,6 +12,10 @@
       textarea, pre{width:100%;min-height:120px;padding:8px;box-sizing:border-box;border:1px solid #ddd;border-radius:6px;background:#fafafa}
       pre{margin:0}
       .caps{font:12px/1.4 system-ui;color:#666}
+      .top{display:flex;gap:12px;align-items:flex-start}
+      .header-pane{flex:0 0 38%; min-width:260px}
+      .header-pane textarea{min-height:240px}
+      .app-pane{flex:1}
       /* simple table styling for CSV preview */
       .table-wrap{overflow:auto;border:1px solid #ddd;border-radius:6px;background:#fafafa}
       table{border-collapse:collapse;width:100%;min-width:480px;font:12px/1.4 system-ui}
@@ -20,7 +24,15 @@
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div class="top">
+      <div class="app-pane">
+        <div id="app"></div>
+      </div>
+      <div class="header-pane">
+        <div class="caps">Header (dynamic)</div>
+        <textarea id="out-header" title="Edit header lines; one column per line"></textarea>
+      </div>
+    </div>
     <div class="toolbar">
       <button id="btn-header">Generate Header</button>
       <button id="btn-csv">Generate CSV</button>
@@ -37,10 +49,6 @@
       </select>
     </div>
     <div class="panel">
-      <div>
-        <div class="caps">Header (dynamic)</div>
-        <textarea id="out-header" title="Edit header lines; one column per line"></textarea>
-      </div>
       <div>
         <div class="caps">CSV Preview (Table)</div>
         <div class="table-wrap">
