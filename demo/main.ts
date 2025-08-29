@@ -34,7 +34,9 @@ let baseIsArray = Array.isArray(api.getJson())
 
 function updateJsonFromRows() {
   const gap = (selGap.value as GapMode) || 'break'
-  const objs = lastRows.map(r => Flatten.unflattenFromRow(lastHeader, r, gap))
+  const objsRaw = lastRows.map(r => Flatten.unflattenFromRow(lastHeader, r, gap))
+  // filter out empty rows (no values)
+  const objs = objsRaw.filter(o => o && typeof o === 'object' && Object.keys(o).length > 0)
   const next = baseIsArray ? objs : (objs[0] ?? {})
   api.setJson(next)
 }
@@ -159,6 +161,20 @@ function renderTable(header: string[], rows: string[][], editable = false) {
   outCsvTable.appendChild(tbody)
 }
 
+function ensureExtraBlankRow(rows: string[][], headerLen: number): string[][] {
+  const copy = rows.map(r => r.slice())
+  const isEmpty = (r: string[]) => r.every(c => !c || c === '')
+  if (copy.length === 0) {
+    copy.push(Array(headerLen).fill(''))
+    return copy
+  }
+  const last = copy[copy.length - 1]
+  if (!isEmpty(last)) {
+    copy.push(Array(headerLen).fill(''))
+  }
+  return copy
+}
+
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
@@ -173,7 +189,8 @@ btnCsv.addEventListener('click', () => {
   header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
-  const rows = arr.map(r => Flatten.flattenToRow(r, header))
+  let rows = arr.map(r => Flatten.flattenToRow(r, header))
+  rows = ensureExtraBlankRow(rows, header.length)
   lastHeader = header
   lastRows = rows
   baseIsArray = Array.isArray(json)
@@ -229,6 +246,7 @@ function applyHeaderPreviewEdits() {
     while (rr.length < lines.length) rr.push('')
     return rr
   })
+  lastRows = ensureExtraBlankRow(lastRows, lines.length)
   renderTable(lastHeader, lastRows, true)
 }
 
