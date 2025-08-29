@@ -103,11 +103,24 @@ function renderTable(header: string[], rows: string[][], editable = false) {
   // thead
   const thead = document.createElement('thead')
   const trh = document.createElement('tr')
-  for (const h of header) {
+  header.forEach((h, hi) => {
     const th = document.createElement('th')
     th.textContent = h
+    th.contentEditable = 'true'
+    th.dataset.col = String(hi)
+    th.title = 'Edit header path'
+    th.addEventListener('blur', () => {
+      const idx = Number(th.dataset.col)
+      const next = th.textContent || ''
+      if (next && lastHeader[idx] !== next) {
+        lastHeader[idx] = next
+        // reflect changes in header preview panel
+        outHeader.textContent = lastHeader.join('\n')
+        // no need to re-render table body; columns count is unchanged
+      }
+    })
     trh.appendChild(th)
-  }
+  })
   thead.appendChild(trh)
   outCsvTable.appendChild(thead)
   // tbody
