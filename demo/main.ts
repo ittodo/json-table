@@ -33,6 +33,7 @@ function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMa
 let lastHeader: string[] = []
 let lastRows: string[][] = []
 let baseIsArray = Array.isArray(api.getJson())
+let pendingFocus: { r: number; c: number } | null = null
 
 function updateJsonFromRows() {
   const gap = (selGap.value as GapMode) || 'break'
@@ -163,23 +164,33 @@ function renderTable(header: string[], rows: string[][], editable = false) {
               lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
               if (lastRows.length !== before) {
                 renderTable(lastHeader, lastRows, true)
-                focusCell(rr + 1, cc)
+                if (pendingFocus) {
+                  focusCell(pendingFocus.r, pendingFocus.c)
+                }
+                pendingFocus = { r: rr + 1, c: cc }
+                focusCell(pendingFocus.r, pendingFocus.c)
                 return
               }
             }
-            focusCell(Math.min(rr + 1, lastRows.length - 1), cc)
+            pendingFocus = { r: Math.min(rr + 1, lastRows.length - 1), c: cc }
+            focusCell(pendingFocus.r, pendingFocus.c)
           } else if (e.key === 'ArrowUp') {
             e.preventDefault()
-            focusCell(Math.max(rr - 1, 0), cc)
+            pendingFocus = { r: Math.max(rr - 1, 0), c: cc }
+            focusCell(pendingFocus.r, pendingFocus.c)
           } else if (e.key === 'ArrowLeft') {
             if (isCaretAtStart(td)) {
               e.preventDefault()
-              if (cc > 0) focusCell(rr, cc - 1)
+              if (cc > 0) {
+              pendingFocus = { r: rr, c: cc - 1 }
+              focusCell(pendingFocus.r, pendingFocus.c)
+            }
             }
           } else if (e.key === 'ArrowRight') {
             if (isCaretAtEnd(td)) {
               e.preventDefault()
-              focusCell(rr, Math.min(cc + 1, lastHeader.length - 1))
+              pendingFocus = { r: rr, c: Math.min(cc + 1, lastHeader.length - 1) }
+              focusCell(pendingFocus.r, pendingFocus.c)
             }
           }
         })
@@ -195,6 +206,9 @@ function renderTable(header: string[], rows: string[][], editable = false) {
           lastRows = ensureExtraBlankRow(lastRows, header.length)
           if (lastRows.length !== beforeLen) {
             renderTable(lastHeader, lastRows, true)
+                if (pendingFocus) {
+                  focusCell(pendingFocus.r, pendingFocus.c)
+                }
           }
         })
       }
@@ -292,6 +306,9 @@ function applyHeaderPreviewEdits() {
   })
   lastRows = ensureExtraBlankRow(lastRows, lines.length)
   renderTable(lastHeader, lastRows, true)
+                if (pendingFocus) {
+                  focusCell(pendingFocus.r, pendingFocus.c)
+                }
 }
 
 outHeader.addEventListener('blur', applyHeaderPreviewEdits)
@@ -360,4 +377,10 @@ function setActiveColumn(colIndex: number) {
     td && td.classList.add('col-active')
   }
 }
+
+
+
+
+
+
 
