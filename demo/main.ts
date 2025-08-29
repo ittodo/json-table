@@ -299,7 +299,7 @@ function renderTable(header: string[], rows: string[][], editable = false) {
         return rr
       })
       lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
-      outHeader.value = lastHeader.join('\\n')
+      outHeader.value = lastHeader.join('\n')
       renderTable(lastHeader, lastRows, true)
     })
     th.addEventListener('keydown', (e) => {
@@ -520,7 +520,7 @@ btnCsv.addEventListener('click', () => {
 
 // Sort columns to keep blocks (e.g., items[0].*) contiguous and ordered
 btnSort.addEventListener('click', () => {
-  const header = lastHeader.length ? lastHeader.slice() : (outHeader.value ? outHeader.value.split('\n').filter(Boolean) : [])
+  const header = lastHeader.length ? lastHeader.slice() : (outHeader.value ? outHeader.value.split(/\r?\n/).filter(Boolean) : [])
   if (!header.length) return
   const rows = lastRows.length ? lastRows.slice() : []
   const res = sortHeaderAndRows(header, rows)
@@ -617,7 +617,7 @@ function applyHeaderPreviewEdits() {
     return rr
   })
   lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
-  outHeader.value = lastHeader.join('\\n')
+          outHeader.value = lastHeader.join('\n')
   renderTable(lastHeader, lastRows, true)
                 if (pendingFocus) {
                   focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
