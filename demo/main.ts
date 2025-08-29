@@ -254,12 +254,23 @@ function renderTable(header: string[], rows: string[][], editable = false) {
     th.addEventListener('blur', () => {
       const idx = Number(th.dataset.col)
       const next = th.textContent || ''
-      if (next && lastHeader[idx] !== next) {
+      if (!next) return
+      if (lastHeader[idx] !== next) {
         lastHeader[idx] = next
-        // reflect changes in header preview panel
-        outHeader.value = lastHeader.join('\\n')
-        // no need to re-render table body; columns count is unchanged
       }
+      // Auto-expand lists by +1 and normalize child subtrees when header edited
+      let expanded = addExtraIndexPerList(lastHeader, 1)
+      expanded = normalizeAndPropagateChildSubtree(expanded)
+      lastHeader = expanded
+      // normalize rows to new header width and re-render
+      lastRows = lastRows.map(r => {
+        const rr = r.slice(0, lastHeader.length)
+        while (rr.length < lastHeader.length) rr.push('')
+        return rr
+      })
+      lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
+      outHeader.value = lastHeader.join('\\n')
+      renderTable(lastHeader, lastRows, true)
     })
     trh.appendChild(th)
   })
@@ -525,14 +536,18 @@ function applyHeaderPreviewEdits() {
     }
   }
   if (!lines.length) return
-  lastHeader = lines
+  // expand + normalize after manual edits (e.g., typing items[1].id)
+  let expanded = addExtraIndexPerList(lines, 1)
+  expanded = normalizeAndPropagateChildSubtree(expanded)
+  lastHeader = expanded
   // normalize rows to new header width
   lastRows = lastRows.map(r => {
-    const rr = r.slice(0, lines.length)
-    while (rr.length < lines.length) rr.push('')
+    const rr = r.slice(0, lastHeader.length)
+    while (rr.length < lastHeader.length) rr.push('')
     return rr
   })
-  lastRows = ensureExtraBlankRow(lastRows, lines.length)
+  lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
+  outHeader.value = lastHeader.join('\\n')
   renderTable(lastHeader, lastRows, true)
                 if (pendingFocus) {
                   focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
