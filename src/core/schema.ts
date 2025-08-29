@@ -59,16 +59,41 @@ export function scanSchema(json: Json | Json[]): ScanResult {
 /** Build concrete header by expanding [0] placeholders up to listMaxes */
 export function buildHeader(prototypeHeader: string[], listMaxes: ListMaxes): string[] {
   const out: string[] = []
+
+  // First pass: collect list tails per root, preserving prototypeHeader order
+  const tailsByRoot = new Map<string, string[]>()
   for (const col of prototypeHeader) {
     const m = col.match(/^(.*)\[(\d+)\](\..*)?$/)
-    if (!m) { out.push(col); continue }
-    const root = m[1]
-    const tail = m[3] || ''
-    const k = listMaxes[root] || 0
-    for (let i = 0; i < k; i++) {
-      out.push(`${root}[${i}]${tail}`)
+    if (m) {
+      const root = m[1]
+      const tail = m[3] || ''
+      const list = tailsByRoot.get(root) ?? []
+      if (!list.includes(tail)) list.push(tail)
+      tailsByRoot.set(root, list)
     }
   }
+
+  // Second pass: emit columns, but for each list root, expand once at first occurrence
+  const emittedRoots = new Set<string>()
+  for (const col of prototypeHeader) {
+    const m = col.match(/^(.*)\[(\d+)\](\..*)?$/)
+    if (!m) {
+      out.push(col)
+      continue
+    }
+    const root = m[1]
+    if (emittedRoots.has(root)) continue
+    emittedRoots.add(root)
+    const k = listMaxes[root] || 0
+    const tails = tailsByRoot.get(root) || ['']
+    // Index-first ordering: items[0].id, items[0].name, items[1].id, items[1].name
+    for (let i = 0; i < k; i++) {
+      for (const tail of tails) {
+        out.push(`${root}[${i}]${tail}`)
+      }
+    }
+  }
+
   return out
 }
 
