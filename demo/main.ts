@@ -520,7 +520,7 @@ btnCsv.addEventListener('click', () => {
 
 // Sort columns to keep blocks (e.g., items[0].*) contiguous and ordered
 btnSort.addEventListener('click', () => {
-  let header = lastHeader.length ? lastHeader.slice() : (outHeader.value ? outHeader.value.split('\n').filter(Boolean) : [])
+  const header = lastHeader.length ? lastHeader.slice() : (outHeader.value ? outHeader.value.split('\n').filter(Boolean) : [])
   if (!header.length) return
   const rows = lastRows.length ? lastRows.slice() : []
   const res = sortHeaderAndRows(header, rows)
