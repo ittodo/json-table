@@ -126,12 +126,10 @@ function addExtraIndexPerList(header: string[], extra = 1): string[] {
   return out
 }
 
-// Normalize and propagate child subtrees (e.g., `.p[...]`, `.q[...]`) so that
-// 1) every sibling index gets the union of child subtree tails, and
-// 2) for each index, child subtrees are placed right after that index's base columns,
-//    in the order discovered in the original header.
-function normalizeAndPropagateChildSubtree(header: string[], childKeys: string | string[] = 'p'): string[] {
-  const keys = Array.isArray(childKeys) ? childKeys : [childKeys]
+// Normalize and propagate child subtrees (any property that is followed by an index, e.g. `.p[0]`, `.power[1]`).
+// 1) For each parent group (e.g., `items`), compute the union of child tails (like `.p[0].a`, `.power[0].a`).
+// 2) Rebuild the parent block so each index has: base cols (no child index) → union child tails, in discovered order.
+function normalizeAndPropagateChildSubtree(header: string[]): string[] {
   const rxFirst = /^(.*?)\[(\d+)\](.*)$/ // split at first [] → parent, index, tail
   type Group = {
     parent: string
@@ -153,7 +151,8 @@ function normalizeAndPropagateChildSubtree(header: string[], childKeys: string |
     if (!g) g = { parent, indices: [], firstPos: i, baseByIdx: new Map(), unionTails: [] }
     if (!g.indices.includes(idx)) g.indices.push(idx)
     g.firstPos = Math.min(g.firstPos, i)
-    const isChildTail = keys.some(k => tail.startsWith('.' + k))
+    // child tail: any segment that contains a property immediately followed by an index, e.g., ".prop[0]"
+    const isChildTail = /\.[^.]+\[\d+\]/.test(tail)
     if (isChildTail) {
       if (!g.unionTails.includes(tail)) g.unionTails.push(tail)
     } else {
