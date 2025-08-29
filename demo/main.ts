@@ -1,4 +1,4 @@
-import { init, Flatten, Csv } from '../src/index'
+﻿import { init, Flatten, Csv } from '../src/index'
 import type { GapMode } from '../src/index'
 
 const app = document.getElementById('app')!
@@ -62,6 +62,41 @@ function mergeHeaderWithFallback(current: string[], prev: string[]): string[] {
   return out
 }
 
+function addExtraIndexPerList(header: string[], extra = 1): string[] {
+  const re = /^(.*)\[(\d+)\](\..*)?$/
+  type Group = { root: string; start: number; end: number; tails: string[]; maxIdx: number }
+  const groups: Group[] = []
+  let cur: Group | null = null
+  for (let i = 0; i < header.length; i++) {
+    const col = header[i]
+    const m = col.match(re)
+    if (!m) { cur = null; continue }
+    const root = m[1]
+    const idx = Number(m[2])
+    const tail = m[3] || ''
+    if (!cur || cur.root !== root) {
+      cur = { root, start: i, end: i, tails: [], maxIdx: -1 }
+      groups.push(cur)
+    } else {
+      cur.end = i
+    }
+    if (!cur.tails.includes(tail)) cur.tails.push(tail)
+    cur.maxIdx = Math.max(cur.maxIdx, idx)
+  }
+  if (!groups.length || extra <= 0) return header
+  const out = header.slice()
+  for (let g = groups.length - 1; g >= 0; g--) {
+    const grp = groups[g]
+    const inserts: string[] = []
+    for (let n = 1; n <= extra; n++) {
+      const i = grp.maxIdx + n
+      for (const t of grp.tails) inserts.push(`${grp.root}[${i}]${t}`)
+    }
+    out.splice(grp.end + 1, 0, ...inserts)
+  }
+  return out
+}
+
 function renderTable(header: string[], rows: string[][], editable = false) {
   // clear
   outCsvTable.innerHTML = ''
@@ -104,13 +139,15 @@ function renderTable(header: string[], rows: string[][], editable = false) {
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
-  outHeader.textContent = header.join('\n')
+  outHeader.textContent = header.join('\\n')
 })
 
 btnCsv.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
@@ -123,10 +160,11 @@ btnCsv.addEventListener('click', () => {
 btnDownload.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
-  const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\n' })
+  const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\\n' })
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -137,3 +175,7 @@ btnDownload.addEventListener('click', () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 })
+
+
+
+
