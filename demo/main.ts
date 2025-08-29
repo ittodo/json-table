@@ -397,26 +397,37 @@ function commitEdit() {
     if (inner) inner.textContent = val
     else td.textContent = val
   }
-  // Auto-expand only when editing the LAST column and it has data
+  // Auto-expand when editing any column within the LAST index of a list parent
   let headerChanged = false
-  if (c === lastHeader.length - 1 && val.trim().length > 0) {
+  if (val.trim().length > 0) {
     const col = lastHeader[c]
     const m = col.match(/^(.*?)\[(\d+)\](.*)$/)
     if (m) {
       const parent = m[1]
-      // Add +1 index only for this parent group, then normalize
-      let expanded = addExtraIndexForParent(lastHeader, parent, 1)
-      expanded = normalizeAndPropagateChildSubtree(expanded)
-      if (expanded.length !== lastHeader.length) {
-        lastHeader = expanded
-        // widen all rows to new header
-        lastRows = lastRows.map(rw => {
-          const rr = rw.slice(0, lastHeader.length)
-          while (rr.length < lastHeader.length) rr.push('')
-          return rr
-        })
-        outHeader.value = lastHeader.join('\n')
-        headerChanged = true
+      const idx = Number(m[2])
+      // find current max index for this parent across header
+      let maxIdx = -1
+      for (const h of lastHeader) {
+        const mm = h.match(/^(.*?)\[(\d+)\](.*)$/)
+        if (!mm) continue
+        if (mm[1] !== parent) continue
+        maxIdx = Math.max(maxIdx, Number(mm[2]))
+      }
+      if (idx === maxIdx) {
+        // Add +1 index only for this parent group, then normalize
+        let expanded = addExtraIndexForParent(lastHeader, parent, 1)
+        expanded = normalizeAndPropagateChildSubtree(expanded)
+        if (expanded.length !== lastHeader.length) {
+          lastHeader = expanded
+          // widen all rows to new header
+          lastRows = lastRows.map(rw => {
+            const rr = rw.slice(0, lastHeader.length)
+            while (rr.length < lastHeader.length) rr.push('')
+            return rr
+          })
+          outHeader.value = lastHeader.join('\n')
+          headerChanged = true
+        }
       }
     }
   }
