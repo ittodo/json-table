@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -18,7 +18,13 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm test\n      - run: echo 'Tests completed' >> \n      - name: Upload coverage artifact\n        uses: actions/upload-artifact@v4\n        with:\n          name: coverage\n          path: coverage
+      - run: npm test -- --coverage
+      - run: echo 'Tests completed' >> $GITHUB_STEP_SUMMARY
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
       - run: npm run build
       - run: npm run build:demo
       - name: Upload demo artifact
@@ -26,4 +32,3 @@ jobs:
         with:
           name: demo
           path: dist-demo
-
