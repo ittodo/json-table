@@ -93,37 +93,36 @@ function mergeHeaderWithFallback(current: string[], prev: string[]): string[] {
 }
 
 function addExtraIndexPerList(header: string[], extra = 1): string[] {
+  if (extra <= 0) return header
   const re = /^(.*)\[(\d+)\](\..*)?$/
-  type Group = { root: string; start: number; end: number; tails: string[]; maxIdx: number }
-  const groups: Group[] = []
-  let cur: Group | null = null
+  type Acc = { pos: number; maxIdx: number; tails: Set<string> }
+  const acc = new Map<string, Acc>()
   for (let i = 0; i < header.length; i++) {
     const col = header[i]
     const m = col.match(re)
-    if (!m) { cur = null; continue }
+    if (!m) continue
     const root = m[1]
     const idx = Number(m[2])
     const tail = m[3] || ''
-    if (!cur || cur.root !== root) {
-      cur = { root, start: i, end: i, tails: [], maxIdx: -1 }
-      groups.push(cur)
-    } else {
-      cur.end = i
-    }
-    if (!cur.tails.includes(tail)) cur.tails.push(tail)
-    cur.maxIdx = Math.max(cur.maxIdx, idx)
+    const a = acc.get(root) || { pos: i, maxIdx: -1, tails: new Set<string>() }
+    a.pos = Math.max(a.pos, i)
+    a.maxIdx = Math.max(a.maxIdx, idx)
+    a.tails.add(tail)
+    acc.set(root, a)
   }
-  if (!groups.length || extra <= 0) return header
+  if (acc.size === 0) return header
   const out = header.slice()
-  for (let g = groups.length - 1; g >= 0; g--) {
-    const grp = groups[g]
+  const plans = Array.from(acc.entries()).map(([root, a]) => {
     const inserts: string[] = []
     for (let n = 1; n <= extra; n++) {
-      const i = grp.maxIdx + n
-      for (const t of grp.tails) inserts.push(`${grp.root}[${i}]${t}`)
+      const i = a.maxIdx + n
+      for (const t of a.tails) inserts.push(`${root}[${i}]${t}`)
     }
-    out.splice(grp.end + 1, 0, ...inserts)
-  }
+    return { pos: a.pos, inserts }
+  })
+  // insert from the end to keep positions stable
+  plans.sort((p, q) => q.pos - p.pos)
+  for (const p of plans) out.splice(p.pos + 1, 0, ...p.inserts)
   return out
 }
 
