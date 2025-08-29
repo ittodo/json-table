@@ -197,7 +197,9 @@ function renderTable(header: string[], rows: string[][], editable = false) {
         td.addEventListener('blur', () => {
           const rr = Number(td.dataset.row)
           const cc = Number(td.dataset.col)
-          rows[rr][cc] = td.textContent || ''
+          const raw = td.textContent || ''
+          const cleaned = raw.replace(/\u200B/g, '')
+          rows[rr][cc] = cleaned
           lastRows = rows
           // write back JSON
           updateJsonFromRows()
@@ -320,22 +322,42 @@ outHeader.addEventListener('blur', applyHeaderPreviewEdits)
 
 
 
-function focusCell(rowIndex: number, colIndex: number) {
+function focusCell(rowIndex: number, colIndex: number, edge: 'start' | 'end' = 'end') {
   const tbody = outCsvTable.tBodies[0]
   if (!tbody) return
   const tr = tbody.rows[rowIndex]
   if (!tr) return
   const td = tr.cells[colIndex]
   if (!td) return
-  ;(td as HTMLElement).focus()
-  try {
-    const range = document.createRange()
-    range.selectNodeContents(td)
-    range.collapse(false)
-    const sel = window.getSelection()
-    sel?.removeAllRanges()
-    sel?.addRange(range)
-  } catch {}
+  const el = td as HTMLElement
+  el.focus()
+  // place caret after paint for reliability
+  requestAnimationFrame(() => {
+    try {
+      // ensure there is at least a text node to place caret into
+      if (el.childNodes.length === 0) {
+        el.appendChild(document.createTextNode(''))
+      }
+      // pick target node
+      let target: ChildNode | null = null
+      if (edge === 'start') {
+        target = el.firstChild
+      } else {
+        target = el.lastChild
+      }
+      const range = document.createRange()
+      if (target && target.nodeType === Node.TEXT_NODE) {
+        const text = (target.textContent ?? '')
+        range.setStart(target, edge === 'start' ? 0 : text.length)
+      } else {
+        range.selectNodeContents(el)
+        range.collapse(edge === 'start')
+      }
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    } catch {}
+  })
 }
 
 
