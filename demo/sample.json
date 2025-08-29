@@ -4,8 +4,23 @@
     "name": "Alice",
     "stats": { "hp": 10, "mp": 5 },
     "items": [
-      { "id": 100, "name": "Potion" },
-      { "id": 101, "name": "Elixir", "p": [ { "a": "X" }, { "a": "Y" } ] }
+      {
+        "id": 100,
+        "name": "Potion",
+        "effects": [ { "name": "heal", "amount": 50 } ]
+      },
+      {
+        "id": 101,
+        "name": "Elixir",
+        "effects": [
+          { "name": "heal", "amount": 100 },
+          { "name": "regen", "amount": 10 }
+        ],
+        "materials": [
+          { "name": "Herb", "qty": 3 },
+          { "name": "Crystal", "qty": 1 }
+        ]
+      }
     ]
   },
   {
@@ -13,8 +28,11 @@
     "name": "Bob",
     "stats": { "hp": 12, "mp": 4 },
     "items": [
-      { "id": 200, "name": "Hi, Potion", "p": [ { "a": "A" } ] }
+      {
+        "id": 200,
+        "name": "Hi-Potion",
+        "effects": [ { "name": "heal", "amount": 80 } ]
+      }
     ]
   }
 ]
-

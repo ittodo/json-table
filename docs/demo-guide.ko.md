@@ -57,7 +57,7 @@
 
 ## 샘플 데이터
 - CSV: `demo/sample.csv` (따옴표/콤마 이스케이프 예시 포함)
-- JSON: `demo/sample.json` (예: `items[1].p[0].a` 형태의 중첩 리스트 포함)
+- JSON: `demo/sample.json` (예: `items[*].effects[*]`, `items[*].materials[*]`와 같은 현실적인 중첩 리스트 포함)
 - CSV 업로드 또는 JSON 에디터에 붙여넣기 후 Generate Header/CSV로 확인하세요.
 
 ## 문제 해결 팁

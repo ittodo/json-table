@@ -57,7 +57,7 @@ This guide explains how to use the demo app (./demo) to try and validate the JSO
 
 ## Sample Data
 - CSV: `demo/sample.csv` (includes quoting/comma examples).
-- JSON: `demo/sample.json` (includes nested lists like `items[1].p[0].a`).
+- JSON: `demo/sample.json` (realistic nested arrays like `items[*].effects[*]` and `items[*].materials[*]`).
 - You can upload CSV or paste JSON into the editor, then Generate Header/CSV.
 
 ## Troubleshooting
