@@ -195,6 +195,7 @@ function startEdit(r: number, c: number, edge: 'start'|'end', seed?: string) {
   editCell = { r, c }
   const td = getCell(r, c)
   if (!td) return
+  ensureCellVisible(r, c)
   const rect = td.getBoundingClientRect()
   overlay.style.display = 'block'
   overlay.style.left = `${rect.left + window.scrollX}px`
@@ -458,3 +459,38 @@ function setActiveColumn(colIndex: number) {
 
 
 
+
+
+function ensureCellVisible(r: number, c: number) {
+  const td = getCell(r, c)
+  if (!td) return
+  const container = outCsvTable.closest('.table-responsive') as HTMLElement | null
+  if (container) {
+    const tdRect = td.getBoundingClientRect()
+    const contRect = container.getBoundingClientRect()
+    if (tdRect.bottom > contRect.bottom) {
+      const dy = tdRect.bottom - contRect.bottom + 8
+      container.scrollTop += dy
+    } else if (tdRect.top < contRect.top) {
+      const dy = contRect.top - tdRect.top + 8
+      container.scrollTop -= dy
+    }
+    if (tdRect.right > contRect.right) {
+      const dx = tdRect.right - contRect.right + 8
+      container.scrollLeft += dx
+    } else if (tdRect.left < contRect.left) {
+      const dx = contRect.left - tdRect.left + 8
+      container.scrollLeft -= dx
+    }
+  } else {
+    td.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+  const rect = td.getBoundingClientRect()
+  const vw = window.innerWidth, vh = window.innerHeight
+  let wx = 0, wy = 0
+  if (rect.bottom > vh) wy = rect.bottom - vh + 8
+  else if (rect.top < 0) wy = rect.top - 8
+  if (rect.right > vw) wx = rect.right - vw + 8
+  else if (rect.left < 0) wx = rect.left - 8
+  if (wx || wy) window.scrollBy({ left: wx, top: wy, behavior: 'auto' })
+}
