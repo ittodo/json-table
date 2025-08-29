@@ -13,7 +13,7 @@ const api = init(app, {
 const btnHeader = document.getElementById('btn-header') as HTMLButtonElement
 const btnCsv = document.getElementById('btn-csv') as HTMLButtonElement
 const outHeader = document.getElementById('out-header') as HTMLPreElement
-const outCsv = document.getElementById('out-csv') as HTMLTextAreaElement
+const outCsvTable = document.getElementById('out-csv-table') as HTMLTableElement
 const btnDownload = document.getElementById('btn-download') as HTMLButtonElement
 const inpK = document.getElementById('inp-k') as HTMLInputElement
 const selGap = document.getElementById('sel-gap') as HTMLSelectElement
@@ -27,6 +27,33 @@ function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMa
   return { listStrategy: 'dynamic' }
 }
 
+function renderTable(header: string[], rows: string[][]) {
+  // clear
+  outCsvTable.innerHTML = ''
+  // thead
+  const thead = document.createElement('thead')
+  const trh = document.createElement('tr')
+  for (const h of header) {
+    const th = document.createElement('th')
+    th.textContent = h
+    trh.appendChild(th)
+  }
+  thead.appendChild(trh)
+  outCsvTable.appendChild(thead)
+  // tbody
+  const tbody = document.createElement('tbody')
+  for (const r of rows) {
+    const tr = document.createElement('tr')
+    for (let i = 0; i < header.length; i++) {
+      const td = document.createElement('td')
+      td.textContent = r[i] ?? ''
+      tr.appendChild(td)
+    }
+    tbody.appendChild(tr)
+  }
+  outCsvTable.appendChild(tbody)
+}
+
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
   const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
@@ -38,7 +65,7 @@ btnCsv.addEventListener('click', () => {
   const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
-  outCsv.value = Csv.toCsv(header, rows, { sep: ',', bom: false, newline: '\n' })
+  renderTable(header, rows)
 })
 
 btnDownload.addEventListener('click', () => {
