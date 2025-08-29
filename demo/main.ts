@@ -3,12 +3,14 @@ import type { GapMode } from '../src/index'
 
 const app = document.getElementById('app')!
 const api = init(app, {
-  initialJson: {
-    id: 1,
-    name: 'Alice',
-    stats: { hp: 10, mp: 5 },
-    items: [{ id: 100, name: 'Potion' }]
-  }
+  initialJson: [
+    {
+      id: 1,
+      name: 'Alice',
+      stats: { hp: 10, mp: 5 },
+      items: [{ id: 100, name: 'Potion' }]
+    }
+  ]
 })
 
 const btnHeader = document.getElementById('btn-header') as HTMLButtonElement
