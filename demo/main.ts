@@ -384,7 +384,7 @@ btnHeader.addEventListener('click', () => {
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   // First create +1 indices, then normalize/propagate child subtrees so new indices get child tails too
   header = addExtraIndexPerList(header, 1)
-  header = normalizeAndPropagateChildSubtree(header, 'p')
+  header = normalizeAndPropagateChildSubtree(header)
   header = mergeHeaderWithFallback(header, lastHeader)
   outHeader.value = header.join('\n')
 })
@@ -393,7 +393,7 @@ btnCsv.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   header = addExtraIndexPerList(header, 1)
-  header = normalizeAndPropagateChildSubtree(header, 'p')
+  header = normalizeAndPropagateChildSubtree(header)
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   let rows = arr.map(r => Flatten.flattenToRow(r, header))
@@ -432,7 +432,7 @@ inpUploadCsv.addEventListener('change', async () => {
     const parsed = Csv.parseCsvText(text, { hasHeader: true, skipEmptyLines: true })
     let header = parsed.header
     header = addExtraIndexPerList(header, 1)
-    header = normalizeAndPropagateChildSubtree(header, 'p')
+    header = normalizeAndPropagateChildSubtree(header)
     const rows = parsed.rows
     // Optionally keep previously edited roots
     header = mergeHeaderWithFallback(header, lastHeader)
