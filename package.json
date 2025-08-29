@@ -21,7 +21,7 @@
     "build": "vite build \u0026\u0026 tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "build:demo": "vite build demo --outDir dist-demo --base=/json-table/",
+    "build:demo": "vite build demo --outDir demo/dist-demo --base=/json-table/",
     "dev": "vite",
     "preview:demo": "npm run build:demo \u0026\u0026 node scripts/serve-demo.mjs"
   },
@@ -45,4 +45,3 @@
     "vitest": "^2.0.5"
   }
 }
-
