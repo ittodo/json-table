@@ -14,7 +14,8 @@ Embeddable JSON ↔ Table widget. Toggle and edit data in JSON or a table (grid)
 - Header‑indexed read API for fast parsing; CSV export with dynamic headers
 
 ## Docs
-See `docs/proposal.md` for the full proposal (architecture, API, CI/CD, next steps).
+- Proposal: `docs/proposal.md`
+- Demo Guide: [`docs/demo-guide.en.md`](docs/demo-guide.en.md) | [`docs/demo-guide.ko.md`](docs/demo-guide.ko.md)
 
 ## Static Deployment
 - Demo (static hosting)
