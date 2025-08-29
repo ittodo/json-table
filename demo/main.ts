@@ -1,5 +1,6 @@
 ﻿import { init, Flatten, Csv } from '../src/index'
 import type { GapMode } from '../src/index'
+import { Schema } from '../src/index'
 
 const app = document.getElementById('app')!
 const api = init(app, {
@@ -15,6 +16,7 @@ const api = init(app, {
 
 const btnHeader = document.getElementById('btn-header') as HTMLButtonElement
 const btnCsv = document.getElementById('btn-csv') as HTMLButtonElement
+const btnSort = document.getElementById('btn-sort') as HTMLButtonElement
 const outHeader = document.getElementById('out-header') as HTMLTextAreaElement
 const outCsvTable = document.getElementById('out-csv-table') as HTMLTableElement
 const btnDownload = document.getElementById('btn-download') as HTMLButtonElement
@@ -124,6 +126,37 @@ function addExtraIndexPerList(header: string[], extra = 1): string[] {
   plans.sort((p, q) => q.pos - p.pos)
   for (const p of plans) out.splice(p.pos + 1, 0, ...p.inserts)
   return out
+}
+
+// Column comparator to keep list blocks contiguous and ordered
+function compareCols(a: string, b: string): number {
+  const ta = Schema.parsePath(a)
+  const tb = Schema.parsePath(b)
+  const topA = ta[0]?.key || ''
+  const topB = tb[0]?.key || ''
+  if (topA !== topB) return topA.localeCompare(topB)
+  const n = Math.max(ta.length, tb.length)
+  for (let i = 0; i < n; i++) {
+    const sa = ta[i], sb = tb[i]
+    if (!sa && sb) return -1
+    if (sa && !sb) return 1
+    if (!sa && !sb) break
+    if (sa.key !== sb.key) return sa.key.localeCompare(sb.key)
+    const ia = sa.index
+    const ib = sb.index
+    if (ia === undefined && ib !== undefined) return -1
+    if (ia !== undefined && ib === undefined) return 1
+    if (ia !== undefined && ib !== undefined && ia !== ib) return ia - ib
+  }
+  return 0
+}
+
+function sortHeaderAndRows(header: string[], rows: string[][]): { header: string[]; rows: string[][] } {
+  const oldHeader = header.slice()
+  const newHeader = header.slice().sort(compareCols)
+  const indexMap = newHeader.map(col => oldHeader.indexOf(col))
+  const newRows = rows.map(r => indexMap.map(i => (i >= 0 ? (r[i] ?? '') : '')))
+  return { header: newHeader, rows: newRows }
 }
 
 // Normalize and propagate child subtrees (any property that is followed by an index, e.g. `.p[0]`, `.power[1]`).
@@ -402,6 +435,18 @@ btnCsv.addEventListener('click', () => {
   lastRows = rows
   baseIsArray = Array.isArray(json)
   renderTable(header, rows, true)
+})
+
+// Sort columns to keep blocks (e.g., items[0].*) contiguous and ordered
+btnSort.addEventListener('click', () => {
+  let header = lastHeader.length ? lastHeader.slice() : (outHeader.value ? outHeader.value.split('\n').filter(Boolean) : [])
+  if (!header.length) return
+  const rows = lastRows.length ? lastRows.slice() : []
+  const res = sortHeaderAndRows(header, rows)
+  lastHeader = res.header
+  lastRows = res.rows
+  outHeader.value = lastHeader.join('\n')
+  renderTable(lastHeader, lastRows, true)
 })
 
 btnDownload.addEventListener('click', () => {
