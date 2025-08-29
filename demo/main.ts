@@ -363,9 +363,9 @@ function ensureExtraBlankRow(rows: string[][], headerLen: number): string[][] {
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
-  // ensure sibling items also get child subtree (e.g., `.p[...]`) columns and ordering is normalized
-  header = normalizeAndPropagateChildSubtree(header, 'p')
+  // First create +1 indices, then normalize/propagate child subtrees so new indices get child tails too
   header = addExtraIndexPerList(header, 1)
+  header = normalizeAndPropagateChildSubtree(header, 'p')
   header = mergeHeaderWithFallback(header, lastHeader)
   outHeader.value = header.join('\n')
 })
@@ -373,8 +373,8 @@ btnHeader.addEventListener('click', () => {
 btnCsv.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
-  header = normalizeAndPropagateChildSubtree(header, 'p')
   header = addExtraIndexPerList(header, 1)
+  header = normalizeAndPropagateChildSubtree(header, 'p')
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   let rows = arr.map(r => Flatten.flattenToRow(r, header))
@@ -412,10 +412,9 @@ inpUploadCsv.addEventListener('change', async () => {
     const text = await file.text()
     const parsed = Csv.parseCsvText(text, { hasHeader: true, skipEmptyLines: true })
     let header = parsed.header
+    header = addExtraIndexPerList(header, 1)
     header = normalizeAndPropagateChildSubtree(header, 'p')
     const rows = parsed.rows
-    // Ensure +1 extra index per list group (e.g., items[max+1]) to allow adding next row
-    header = addExtraIndexPerList(header, 1)
     // Optionally keep previously edited roots
     header = mergeHeaderWithFallback(header, lastHeader)
     lastHeader = header
