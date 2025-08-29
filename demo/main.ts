@@ -126,55 +126,75 @@ function addExtraIndexPerList(header: string[], extra = 1): string[] {
   return out
 }
 
-// Propagate a child subtree (e.g., `.p[...]` or `.p.`) across sibling indices
-// Example: if header has `items[0].p[0].a` and also `items[1].id`,
-// ensure `items[1].p[0].a` exists and is inserted right after the last `items[1]` column.
-function propagateChildSubtreeAcrossSiblings(header: string[], childKey = 'p'): string[] {
-  const firstBracket = /^(.*?)\[(\d+)\](.*)$/
-  const present = new Set(header)
-  type Parent = { indices: Set<number>; tails: Set<string>; lastPos: Map<number, number> }
-  const groups = new Map<string, Parent>()
+// Normalize and propagate a child subtree (e.g., `.p[...]`) so that
+// - every sibling index gets the subtree columns
+// - all subtree columns for each index are placed immediately after that index's base columns
+function normalizeAndPropagateChildSubtree(header: string[], childKey = 'p'): string[] {
+  const rx = /^(.*?)\[(\d+)\](.*)$/
+  type Group = {
+    indices: Set<number>
+    unionTails: string[]
+    childByIdx: Map<number, string[]>
+  }
+  const groups = new Map<string, Group>()
+  // collect information
   for (let i = 0; i < header.length; i++) {
     const col = header[i]
-    const m = col.match(firstBracket)
+    const m = col.match(rx)
     if (!m) continue
-    const parent = m[1] // e.g., 'items'
-    const idx = Number(m[2]) // e.g., 0
-    const tail = m[3] || '' // e.g., '.p[0].a' or '.id'
+    const parent = m[1]
+    const idx = Number(m[2])
+    const tail = m[3] || ''
     let g = groups.get(parent)
-    if (!g) g = { indices: new Set<number>(), tails: new Set<string>(), lastPos: new Map<number, number>() }
+    if (!g) g = { indices: new Set<number>(), unionTails: [], childByIdx: new Map() }
     g.indices.add(idx)
-    // track last position for each index segment under this parent
-    g.lastPos.set(idx, i)
-    // only propagate the specified child subtree
-    if (tail.startsWith('.' + childKey)) g.tails.add(tail)
+    if (tail.startsWith('.' + childKey)) {
+      const arr = g.childByIdx.get(idx) || []
+      if (!arr.includes(tail)) arr.push(tail)
+      g.childByIdx.set(idx, arr)
+      if (!g.unionTails.includes(tail)) g.unionTails.push(tail)
+    }
     groups.set(parent, g)
   }
   if (groups.size === 0) return header
-  const insertsByPos = new Map<number, string[]>()
+  // remove all existing child subtree columns to re-insert at proper places
+  const remove = new Set<string>()
   for (const [parent, g] of groups) {
-    for (const idx of g.indices) {
-      const base = `${parent}[${idx}]`
-      const pos = g.lastPos.get(idx)
-      if (pos == null) continue
-      for (const t of g.tails) {
-        const full = base + t
-        if (!present.has(full)) {
-          const arr = insertsByPos.get(pos) || []
-          arr.push(full)
-          insertsByPos.set(pos, arr)
-          present.add(full)
-        }
-      }
+    for (const [idx, tails] of g.childByIdx.entries()) {
+      for (const t of tails) remove.add(`${parent}[${idx}]${t}`)
     }
   }
-  if (insertsByPos.size === 0) return header
-  const out = header.slice()
-  const positions = Array.from(insertsByPos.keys()).sort((a, b) => b - a)
-  for (const pos of positions) {
-    const ins = insertsByPos.get(pos)!
-    out.splice(pos + 1, 0, ...ins)
+  const filtered = header.filter(col => !remove.has(col))
+  // helper to find last position of base columns for a given index (excluding childKey subtree)
+  function findLastBasePos(hdr: string[], parent: string, idx: number): number | null {
+    const basePrefix = `${parent}[${idx}]`
+    let last: number | null = null
+    for (let i = 0; i < hdr.length; i++) {
+      const col = hdr[i]
+      if (!col.startsWith(basePrefix)) continue
+      const m = col.match(rx)
+      if (!m) continue
+      const tail = m[3] || ''
+      if (!tail.startsWith('.' + childKey)) last = i
+    }
+    return last
   }
+  // plan insertions: for each index, insert union tails after its base
+  type Plan = { pos: number, cols: string[] }
+  const plans: Plan[] = []
+  for (const [parent, g] of groups) {
+    for (const idx of g.indices) {
+      const pos = findLastBasePos(filtered, parent, idx)
+      if (pos == null) continue
+      const cols: string[] = []
+      for (const t of g.unionTails) cols.push(`${parent}[${idx}]${t}`)
+      plans.push({ pos, cols })
+    }
+  }
+  if (!plans.length) return filtered
+  plans.sort((a, b) => b.pos - a.pos)
+  const out = filtered.slice()
+  for (const p of plans) out.splice(p.pos + 1, 0, ...p.cols)
   return out
 }
 
@@ -354,8 +374,8 @@ function ensureExtraBlankRow(rows: string[][], headerLen: number): string[][] {
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
-  // ensure sibling items also get child subtree (e.g., `.p[...]`) columns
-  header = propagateChildSubtreeAcrossSiblings(header, 'p')
+  // ensure sibling items also get child subtree (e.g., `.p[...]`) columns and ordering is normalized
+  header = normalizeAndPropagateChildSubtree(header, 'p')
   header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
   outHeader.value = header.join('\n')
@@ -364,7 +384,7 @@ btnHeader.addEventListener('click', () => {
 btnCsv.addEventListener('click', () => {
   const json = api.getJson()
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
-  header = propagateChildSubtreeAcrossSiblings(header, 'p')
+  header = normalizeAndPropagateChildSubtree(header, 'p')
   header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
@@ -403,7 +423,7 @@ inpUploadCsv.addEventListener('change', async () => {
     const text = await file.text()
     const parsed = Csv.parseCsvText(text, { hasHeader: true, skipEmptyLines: true })
     let header = parsed.header
-    header = propagateChildSubtreeAcrossSiblings(header, 'p')
+    header = normalizeAndPropagateChildSubtree(header, 'p')
     const rows = parsed.rows
     // Ensure +1 extra index per list group (e.g., items[max+1]) to allow adding next row
     header = addExtraIndexPerList(header, 1)
