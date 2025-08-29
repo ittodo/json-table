@@ -367,10 +367,26 @@ function commitEdit() {
     if (inner) inner.textContent = val
     else td.textContent = val
   }
+  // If editing a list column like items[1].id, auto-expand header by +1 index
+  const beforeHeaderLen = lastHeader.length
+  let maybeExpanded = addExtraIndexPerList(lastHeader, 1)
+  maybeExpanded = normalizeAndPropagateChildSubtree(maybeExpanded)
+  let headerChanged = false
+  if (maybeExpanded.length !== beforeHeaderLen) {
+    lastHeader = maybeExpanded
+    // widen all rows to new header
+    lastRows = lastRows.map(rw => {
+      const rr = rw.slice(0, lastHeader.length)
+      while (rr.length < lastHeader.length) rr.push('')
+      return rr
+    })
+    outHeader.value = lastHeader.join('\n')
+    headerChanged = true
+  }
   updateJsonFromRows()
   const before = lastRows.length
   lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
-  if (lastRows.length !== before) renderTable(lastHeader, lastRows, true)
+  if (headerChanged || lastRows.length !== before) renderTable(lastHeader, lastRows, true)
   editCell = null
 }
 
