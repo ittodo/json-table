@@ -191,10 +191,26 @@ btnDownload.addEventListener('click', () => {
 
 // Allow editing header lines in the preview box
 function applyHeaderPreviewEdits() {
-  const lines = (outHeader.textContent || '')
-    .split(/\r?\n/)
-    .map(s => s.trim())
-    .filter(Boolean)
+  const rawLines = (outHeader.textContent || '').split(/\r?\n/)
+  // Keep empty lines to allow adding new columns; generate placeholders
+  const lines: string[] = []
+  let newCount = 0
+  const exists = new Set<string>()
+  for (let i = 0; i < rawLines.length; i++) {
+    const t = rawLines[i].trim()
+    if (t.length > 0) {
+      lines.push(t)
+      exists.add(t)
+    } else {
+      // placeholder path for empty header entry
+      let placeholder = `column_${++newCount}`
+      while (exists.has(placeholder)) {
+        placeholder = `column_${++newCount}`
+      }
+      lines.push(placeholder)
+      exists.add(placeholder)
+    }
+  }
   if (!lines.length) return
   lastHeader = lines
   // normalize rows to new header width
