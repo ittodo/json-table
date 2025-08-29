@@ -23,6 +23,12 @@ jobs:
         run: npm run build
       - name: Build demo
         run: npm run build:demo
+      - name: List build outputs
+        run: |
+          ls -la
+          ls -la demo || true
+          ls -la demo/dist-demo || true
+          find . -maxdepth 3 -type d -name "dist*" -print
       - name: Upload demo artifact
         uses: actions/upload-artifact@v4
         with:
