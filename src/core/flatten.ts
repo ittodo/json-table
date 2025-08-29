@@ -113,7 +113,7 @@ export function flattenToRow(obj: any, header: string[]): string[] {
 
 export type GapMode = 'break' | 'sparse'
 
-export function unflattenFromRow(header: string[], row: string[], gap: GapMode = 'break'): any {
+export function unflattenFromRow(header: string[], row: string[], _gap: GapMode = 'break'): any {
   const root: any = {}
   for (let i = 0; i < header.length; i++) {
     const col = header[i]

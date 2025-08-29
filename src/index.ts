@@ -1,4 +1,6 @@
-﻿export type GapMode = 'break' | 'sparse'
+﻿import * as Flatten from './core/flatten'
+import * as Csv from './core/export'
+export type GapMode = 'break' | 'sparse'
 
 export interface InitOptions {
   initialJson?: unknown
@@ -46,8 +48,6 @@ export function init(container: HTMLElement, options: InitOptions = {}): JsonTab
       try {
         const json = this.getJson()
         const arr = Array.isArray(json) ? json : [json]
-        const Flatten = require('./core/flatten') as typeof import('./core/flatten')
-        const Csv = require('./core/export') as typeof import('./core/export')
         const { header } = Flatten.buildHeaderFromJson(json, {
           listStrategy: options.listStrategy ?? 'dynamic',
           fixedListMax: options.fixedListMax,
@@ -71,3 +71,5 @@ export * as Schema from './core/schema'
 export * as Flatten from './core/flatten'
 export * as Csv from './core/export'
 export * as Validate from './core/validate'
+
+
