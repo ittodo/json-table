@@ -128,6 +128,36 @@ function addExtraIndexPerList(header: string[], extra = 1): string[] {
   return out
 }
 
+// Add +extra indices only for a specific parent group (before first [n])
+function addExtraIndexForParent(header: string[], parent: string, extra = 1): string[] {
+  if (extra <= 0) return header
+  const reFirst = /^(.*?)\[(\d+)\](.*)$/
+  type Acc = { pos: number; maxIdx: number; tails: Set<string> }
+  let acc: Acc | null = null
+  for (let i = 0; i < header.length; i++) {
+    const col = header[i]
+    const m = col.match(reFirst)
+    if (!m) continue
+    const p = m[1]
+    if (p !== parent) continue
+    const idx = Number(m[2])
+    const tail = m[3] || ''
+    if (!acc) acc = { pos: i, maxIdx: -1, tails: new Set<string>() }
+    acc.pos = Math.max(acc.pos, i)
+    acc.maxIdx = Math.max(acc.maxIdx, idx)
+    acc.tails.add(tail)
+  }
+  if (!acc) return header
+  const out = header.slice()
+  const inserts: string[] = []
+  for (let n = 1; n <= extra; n++) {
+    const i = acc.maxIdx + n
+    for (const t of acc.tails) inserts.push(`${parent}[${i}]${t}`)
+  }
+  out.splice(acc.pos + 1, 0, ...inserts)
+  return out
+}
+
 // Column comparator to keep list blocks contiguous and ordered
 function compareCols(a: string, b: string): number {
   const ta = Schema.parsePath(a)
@@ -367,21 +397,28 @@ function commitEdit() {
     if (inner) inner.textContent = val
     else td.textContent = val
   }
-  // If editing a list column like items[1].id, auto-expand header by +1 index
-  const beforeHeaderLen = lastHeader.length
-  let maybeExpanded = addExtraIndexPerList(lastHeader, 1)
-  maybeExpanded = normalizeAndPropagateChildSubtree(maybeExpanded)
+  // Auto-expand only when editing the LAST column and it has data
   let headerChanged = false
-  if (maybeExpanded.length !== beforeHeaderLen) {
-    lastHeader = maybeExpanded
-    // widen all rows to new header
-    lastRows = lastRows.map(rw => {
-      const rr = rw.slice(0, lastHeader.length)
-      while (rr.length < lastHeader.length) rr.push('')
-      return rr
-    })
-    outHeader.value = lastHeader.join('\n')
-    headerChanged = true
+  if (c === lastHeader.length - 1 && val.trim().length > 0) {
+    const col = lastHeader[c]
+    const m = col.match(/^(.*?)\[(\d+)\](.*)$/)
+    if (m) {
+      const parent = m[1]
+      // Add +1 index only for this parent group, then normalize
+      let expanded = addExtraIndexForParent(lastHeader, parent, 1)
+      expanded = normalizeAndPropagateChildSubtree(expanded)
+      if (expanded.length !== lastHeader.length) {
+        lastHeader = expanded
+        // widen all rows to new header
+        lastRows = lastRows.map(rw => {
+          const rr = rw.slice(0, lastHeader.length)
+          while (rr.length < lastHeader.length) rr.push('')
+          return rr
+        })
+        outHeader.value = lastHeader.join('\n')
+        headerChanged = true
+      }
+    }
   }
   updateJsonFromRows()
   const before = lastRows.length
