@@ -40,10 +40,11 @@ export function scanSchema(json: Json | Json[]): ScanResult {
       if (rootName) {
         listMaxes[rootName] = Math.max(listMaxes[rootName] || 0, k)
       }
-      // collect inner tails using [0] placeholder
+      // collect inner tails using [0] placeholder; union across ALL elements
       if (k > 0) {
-        const first = val[0]
-        walk(first, `${prefix}[0]`)
+        for (let i = 0; i < k; i++) {
+          walk(val[i], `${prefix}[0]`)
+        }
       } else {
         // empty list: keep placeholder root itself
         addProto(prefix)
