@@ -154,7 +154,7 @@ btnHeader.addEventListener('click', () => {
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
-  outHeader.textContent = header.join('\\n')
+  outHeader.textContent = header.join('\n')
 })
 
 btnCsv.addEventListener('click', () => {
@@ -177,7 +177,7 @@ btnDownload.addEventListener('click', () => {
   header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
-  const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\\n' })
+  const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\n' })
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
