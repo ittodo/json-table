@@ -13,7 +13,7 @@ const api = init(app, {
 
 const btnHeader = document.getElementById('btn-header') as HTMLButtonElement
 const btnCsv = document.getElementById('btn-csv') as HTMLButtonElement
-const outHeader = document.getElementById('out-header') as HTMLPreElement
+const outHeader = document.getElementById('out-header') as HTMLTextAreaElement
 const outCsvTable = document.getElementById('out-csv-table') as HTMLTableElement
 const btnDownload = document.getElementById('btn-download') as HTMLButtonElement
 const inpK = document.getElementById('inp-k') as HTMLInputElement
@@ -115,7 +115,7 @@ function renderTable(header: string[], rows: string[][], editable = false) {
       if (next && lastHeader[idx] !== next) {
         lastHeader[idx] = next
         // reflect changes in header preview panel
-        outHeader.textContent = lastHeader.join('\n')
+        outHeader.value = lastHeader.join('\\n')
         // no need to re-render table body; columns count is unchanged
       }
     })
@@ -154,7 +154,7 @@ btnHeader.addEventListener('click', () => {
   let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   header = addExtraIndexPerList(header, 1)
   header = mergeHeaderWithFallback(header, lastHeader)
-  outHeader.textContent = header.join('\n')
+  outHeader.value = header.join('\n')
 })
 
 btnCsv.addEventListener('click', () => {
@@ -191,7 +191,7 @@ btnDownload.addEventListener('click', () => {
 
 // Allow editing header lines in the preview box
 function applyHeaderPreviewEdits() {
-  const rawLines = (outHeader.textContent || '').split(/\r?\n/)
+  const rawLines = (outHeader.value || '').split(/\r?\n/)
   // Keep empty lines to allow adding new columns; generate placeholders
   const lines: string[] = []
   let newCount = 0
@@ -223,6 +223,7 @@ function applyHeaderPreviewEdits() {
 }
 
 outHeader.addEventListener('blur', applyHeaderPreviewEdits)
+
 
 
 
