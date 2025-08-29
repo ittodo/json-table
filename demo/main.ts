@@ -148,8 +148,11 @@ function renderTable(header: string[], rows: string[][], editable = false) {
         td.contentEditable = 'true'
         td.dataset.row = String(ri)
         td.dataset.col = String(i)
-        td.addEventListener('keydown', ()=>{})
-        // Arrow key navigation: Up/Down move across rows in the same column
+        td.addEventListener('focus', () => {
+          const cc = Number(td.dataset.col)
+          setActiveColumn(cc)
+        })
+        // Arrow key navigation: Up/Down/Left/Right
         td.addEventListener('keydown', (e) => {
           const rr = Number(td.dataset.row)
           const cc = Number(td.dataset.col)
@@ -168,9 +171,20 @@ function renderTable(header: string[], rows: string[][], editable = false) {
           } else if (e.key === 'ArrowUp') {
             e.preventDefault()
             focusCell(Math.max(rr - 1, 0), cc)
+          } else if (e.key === 'ArrowLeft') {
+            if (isCaretAtStart(td)) {
+              e.preventDefault()
+              if (cc > 0) focusCell(rr, cc - 1)
+            }
+          } else if (e.key === 'ArrowRight') {
+            if (isCaretAtEnd(td)) {
+              e.preventDefault()
+              focusCell(rr, Math.min(cc + 1, lastHeader.length - 1))
+            }
           }
         })
         td.addEventListener('blur', () => {
+          const rr = Number(td.dataset.row)
           const cc = Number(td.dataset.col)
           rows[rr][cc] = td.textContent || ''
           lastRows = rows
@@ -306,3 +320,44 @@ function focusCell(rowIndex: number, colIndex: number) {
     sel?.addRange(range)
   } catch {}
 }
+
+
+function isCaretAtStart(td: HTMLElement): boolean {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false
+  const node = sel.anchorNode
+  const offset = sel.anchorOffset
+  if (!node || !td.contains(node)) return false
+  if (node.nodeType === Node.TEXT_NODE) return offset === 0
+  return node === td && offset === 0
+}
+
+function isCaretAtEnd(td: HTMLElement): boolean {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false
+  const node = sel.anchorNode as any
+  const offset = sel.anchorOffset
+  if (!node || !td.contains(node)) return false
+  if (node.nodeType === Node.TEXT_NODE) {
+    return offset === (node.textContent ? node.textContent.length : 0)
+  }
+  if (node === td) {
+    return offset >= td.childNodes.length
+  }
+  return false
+}
+
+function setActiveColumn(colIndex: number) {
+  outCsvTable.querySelectorAll('.col-active').forEach(el => el.classList.remove('col-active'))
+  if (outCsvTable.tHead && outCsvTable.tHead.rows[0]) {
+    const th = outCsvTable.tHead.rows[0].cells[colIndex]
+    th && th.classList.add('col-active')
+  }
+  const tb = outCsvTable.tBodies[0]
+  if (!tb) return
+  for (let r = 0; r < tb.rows.length; r++) {
+    const td = tb.rows[r].cells[colIndex]
+    td && td.classList.add('col-active')
+  }
+}
+
