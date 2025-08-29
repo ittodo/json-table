@@ -21,8 +21,17 @@ export interface ScanResult {
  */
 export function scanSchema(json: Json | Json[]): ScanResult {
   const arr = Array.isArray(json) ? json : [json]
-  const proto = new Set<string>()
+  const proto: string[] = []
+  const seen = new Set<string>()
   const listMaxes: ListMaxes = {}
+
+  function addProto(path: string) {
+    if (!path) return
+    if (!seen.has(path)) {
+      seen.add(path)
+      proto.push(path)
+    }
+  }
 
   function walk(val: any, prefix: string) {
     if (Array.isArray(val)) {
@@ -37,7 +46,7 @@ export function scanSchema(json: Json | Json[]): ScanResult {
         walk(first, `${prefix}[0]`)
       } else {
         // empty list: keep placeholder root itself
-        if (prefix) proto.add(prefix)
+        addProto(prefix)
       }
       return
     }
@@ -48,12 +57,13 @@ export function scanSchema(json: Json | Json[]): ScanResult {
       return
     }
     // primitive/leaf
-    if (prefix) proto.add(prefix)
+    addProto(prefix)
   }
 
   for (const it of arr) walk(it, '')
 
-  return { prototypeHeader: Array.from(proto).sort(), listMaxes }
+  // preserve discovery order; do not sort
+  return { prototypeHeader: proto, listMaxes }
 }
 
 /** Build concrete header by expanding [0] placeholders up to listMaxes */
