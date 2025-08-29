@@ -39,6 +39,29 @@ function updateJsonFromRows() {
   api.setJson(next)
 }
 
+function mergeHeaderWithFallback(current: string[], prev: string[]): string[] {
+  if (!prev.length) return current
+  const out = current.slice()
+  const hasRoot = (root: string) => out.some(c => c.startsWith(root + '['))
+  const seen = new Set(out)
+  for (const col of prev) {
+    const m = col.match(/^(.*)\[(\d+)\](\..*)?$/)
+    if (!m) continue
+    const root = m[1]
+    const idx = Number(m[2])
+    const tail = m[3] || ''
+    if (idx !== 0) continue
+    if (!hasRoot(root)) {
+      const addCol = `${root}[0]${tail}`
+      if (!seen.has(addCol)) {
+        out.push(addCol)
+        seen.add(addCol)
+      }
+    }
+  }
+  return out
+}
+
 function renderTable(header: string[], rows: string[][], editable = false) {
   // clear
   outCsvTable.innerHTML = ''
@@ -80,13 +103,15 @@ function renderTable(header: string[], rows: string[][], editable = false) {
 
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
-  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = mergeHeaderWithFallback(header, lastHeader)
   outHeader.textContent = header.join('\n')
 })
 
 btnCsv.addEventListener('click', () => {
   const json = api.getJson()
-  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
   lastHeader = header
@@ -97,7 +122,8 @@ btnCsv.addEventListener('click', () => {
 
 btnDownload.addEventListener('click', () => {
   const json = api.getJson()
-  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  let { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  header = mergeHeaderWithFallback(header, lastHeader)
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
   const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\n' })
@@ -111,4 +137,3 @@ btnDownload.addEventListener('click', () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 })
-
