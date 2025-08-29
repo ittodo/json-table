@@ -148,8 +148,29 @@ function renderTable(header: string[], rows: string[][], editable = false) {
         td.contentEditable = 'true'
         td.dataset.row = String(ri)
         td.dataset.col = String(i)
-        td.addEventListener('blur', () => {
+        td.addEventListener('keydown', ()=>{})
+        // Arrow key navigation: Up/Down move across rows in the same column
+        td.addEventListener('keydown', (e) => {
           const rr = Number(td.dataset.row)
+          const cc = Number(td.dataset.col)
+          if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            if (rr === lastRows.length - 1) {
+              const before = lastRows.length
+              lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
+              if (lastRows.length !== before) {
+                renderTable(lastHeader, lastRows, true)
+                focusCell(rr + 1, cc)
+                return
+              }
+            }
+            focusCell(Math.min(rr + 1, lastRows.length - 1), cc)
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            focusCell(Math.max(rr - 1, 0), cc)
+          }
+        })
+        td.addEventListener('blur', () => {
           const cc = Number(td.dataset.col)
           rows[rr][cc] = td.textContent || ''
           lastRows = rows
@@ -265,3 +286,23 @@ outHeader.addEventListener('blur', applyHeaderPreviewEdits)
 
 
 
+
+
+
+function focusCell(rowIndex: number, colIndex: number) {
+  const tbody = outCsvTable.tBodies[0]
+  if (!tbody) return
+  const tr = tbody.rows[rowIndex]
+  if (!tr) return
+  const td = tr.cells[colIndex]
+  if (!td) return
+  ;(td as HTMLElement).focus()
+  try {
+    const range = document.createRange()
+    range.selectNodeContents(td)
+    range.collapse(false)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+  } catch {}
+}
