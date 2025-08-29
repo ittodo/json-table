@@ -272,6 +272,12 @@ function renderTable(header: string[], rows: string[][], editable = false) {
       outHeader.value = lastHeader.join('\\n')
       renderTable(lastHeader, lastRows, true)
     })
+    th.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        ;(e.target as HTMLElement).blur()
+      }
+    })
     trh.appendChild(th)
   })
   thead.appendChild(trh)
@@ -555,6 +561,13 @@ function applyHeaderPreviewEdits() {
 }
 
 outHeader.addEventListener('blur', applyHeaderPreviewEdits)
+// Apply on Enter in header preview (no Shift)
+outHeader.addEventListener('keydown', (e) => {
+  if ((e as KeyboardEvent).key === 'Enter' && !(e as KeyboardEvent).shiftKey) {
+    e.preventDefault()
+    applyHeaderPreviewEdits()
+  }
+})
 
 
 
@@ -673,3 +686,4 @@ function _ensureCellVisible(r: number, c: number) {
 
 
 }
+
