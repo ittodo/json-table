@@ -35,6 +35,20 @@ let lastRows: string[][] = []
 let baseIsArray = Array.isArray(api.getJson())
 let pendingFocus: { r: number; c: number; edge?: 'start' | 'end' } | null = null
 
+// Overlay input editor (more reliable caret than contentEditable)
+const overlay = document.createElement('input')
+overlay.type = 'text'
+overlay.style.position = 'absolute'
+overlay.style.zIndex = '1000'
+overlay.style.font = '12px/1.4 system-ui'
+overlay.style.padding = '4px 6px'
+overlay.style.border = '1px solid #0d6efd'
+overlay.style.borderRadius = '4px'
+overlay.style.boxSizing = 'border-box'
+overlay.style.display = 'none'
+document.body.appendChild(overlay)
+let editCell: { r: number; c: number } | null = null
+
 function updateJsonFromRows() {
   const gap = (selGap.value as GapMode) || 'break'
   const objsRaw = lastRows.map(r => Flatten.unflattenFromRow(lastHeader, r, gap))
@@ -146,73 +160,15 @@ function renderTable(header: string[], rows: string[][], editable = false) {
       const td = document.createElement('td')
       td.textContent = r[i] ?? ''
       if (editable) {
-        td.contentEditable = 'true'
+        td.tabIndex = 0
         td.dataset.row = String(ri)
         td.dataset.col = String(i)
         td.addEventListener('focus', () => {
           const cc = Number(td.dataset.col)
           setActiveColumn(cc)
         })
-        // Arrow key navigation: Up/Down/Left/Right
-        td.addEventListener('keydown', (e) => {
-          const rr = Number(td.dataset.row)
-          const cc = Number(td.dataset.col)
-          if (e.key === 'ArrowDown') {
-            e.preventDefault()
-            if (rr === lastRows.length - 1) {
-              const before = lastRows.length
-              lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
-              if (lastRows.length !== before) {
-                renderTable(lastHeader, lastRows, true)
-                if (pendingFocus) {
-                  focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-                }
-                pendingFocus = { r: rr + 1, c: cc, edge: 'end' }
-                focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-                return
-              }
-            }
-            pendingFocus = { r: Math.min(rr + 1, lastRows.length - 1), c: cc }
-            focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault()
-            pendingFocus = { r: Math.max(rr - 1, 0), c: cc }
-            focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-          } else if (e.key === 'ArrowLeft') {
-            if (isCaretAtStart(td)) {
-              e.preventDefault()
-              if (cc > 0) {
-              pendingFocus = { r: rr, c: cc - 1 }
-              focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-            }
-            }
-          } else if (e.key === 'ArrowRight') {
-            if (isCaretAtEnd(td)) {
-              e.preventDefault()
-              pendingFocus = { r: rr, c: Math.min(cc + 1, lastHeader.length - 1) }
-              focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-            }
-          }
-        })
-        td.addEventListener('blur', () => {
-          const rr = Number(td.dataset.row)
-          const cc = Number(td.dataset.col)
-          const raw = td.textContent || ''
-          const cleaned = raw.replace(/\u200B/g, '')
-          rows[rr][cc] = cleaned
-          lastRows = rows
-          // write back JSON
-          updateJsonFromRows()
-          // auto-add a new blank row if the last row now has any content
-          const beforeLen = lastRows.length
-          lastRows = ensureExtraBlankRow(lastRows, header.length)
-          if (lastRows.length !== beforeLen) {
-            renderTable(lastHeader, lastRows, true)
-                if (pendingFocus) {
-                  focusCell(pendingFocus.r, pendingFocus.c, pendingFocus.edge ?? 'end')
-                }
-          }
-        })
+        td.addEventListener('click', () => startEdit(ri, i, 'end'))
+        td.addEventListener('keydown', (e) => handleCellKey(e, ri, i))
       }
       tr.appendChild(td)
     }
@@ -220,6 +176,94 @@ function renderTable(header: string[], rows: string[][], editable = false) {
   })
   outCsvTable.appendChild(tbody)
 }
+
+function handleCellKey(e: KeyboardEvent, r: number, c: number) {
+  const key = e.key
+  if (key === 'Enter') { e.preventDefault(); startEdit(r, c, 'end'); return }
+  if (key === 'F2') { e.preventDefault(); startEdit(r, c, 'end'); return }
+  if (key === 'ArrowDown') { e.preventDefault(); moveTo(r + 1, c, 'end'); return }
+  if (key === 'ArrowUp') { e.preventDefault(); moveTo(Math.max(r - 1, 0), c, 'end'); return }
+  if (key === 'ArrowLeft') { e.preventDefault(); moveTo(r, Math.max(c - 1, 0), 'end'); return }
+  if (key === 'ArrowRight') { e.preventDefault(); moveTo(r, Math.min(c + 1, lastHeader.length - 1), 'start'); return }
+  // any printable key starts editing
+  if (key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault(); startEdit(r, c, 'end', key)
+  }
+}
+
+function startEdit(r: number, c: number, edge: 'start'|'end', seed?: string) {
+  editCell = { r, c }
+  const td = getCell(r, c)
+  if (!td) return
+  const rect = td.getBoundingClientRect()
+  overlay.style.display = 'block'
+  overlay.style.left = `${rect.left + window.scrollX}px`
+  overlay.style.top = `${rect.top + window.scrollY}px`
+  overlay.style.width = `${rect.width - 2}px`
+  overlay.style.height = `${rect.height - 2}px`
+  overlay.value = (td.textContent || '').replace(/\u200B/g, '')
+  if (seed) overlay.value = seed
+  requestAnimationFrame(() => {
+    overlay.focus()
+    const pos = edge === 'start' ? 0 : overlay.value.length
+    overlay.setSelectionRange(pos, pos)
+  })
+}
+
+function commitEdit() {
+  if (!editCell) return
+  const { r, c } = editCell
+  const val = overlay.value
+  lastRows[r][c] = val
+  const td = getCell(r, c)
+  if (td) td.textContent = val
+  updateJsonFromRows()
+  const before = lastRows.length
+  lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
+  if (lastRows.length !== before) renderTable(lastHeader, lastRows, true)
+  editCell = null
+}
+
+function endEdit() {
+  overlay.style.display = 'none'
+}
+
+function moveTo(r: number, c: number, edge: 'start'|'end') {
+  if (r >= lastRows.length - 1) {
+    const before = lastRows.length
+    lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
+    if (lastRows.length !== before) renderTable(lastHeader, lastRows, true)
+  }
+  const rr = Math.min(Math.max(r, 0), lastRows.length - 1)
+  const cc = Math.min(Math.max(c, 0), lastHeader.length - 1)
+  startEdit(rr, cc, edge)
+}
+
+function getCell(r: number, c: number): HTMLTableCellElement | null {
+  const tb = outCsvTable.tBodies[0]
+  if (!tb) return null
+  const tr = tb.rows[r]
+  if (!tr) return null
+  return tr.cells[c] as HTMLTableCellElement
+}
+
+overlay.addEventListener('keydown', (e) => {
+  if (!editCell) return
+  const { r, c } = editCell
+  if (e.key === 'Enter') { e.preventDefault(); commitEdit(); moveTo(r+1, c, 'end'); return }
+  if (e.key === 'Tab') { e.preventDefault(); commitEdit(); moveTo(r, c+1, 'start'); return }
+  if (e.key === 'ArrowDown') { e.preventDefault(); commitEdit(); moveTo(r+1, c, 'end'); return }
+  if (e.key === 'ArrowUp') { e.preventDefault(); commitEdit(); moveTo(Math.max(r-1,0), c, 'end'); return }
+  if (e.key === 'ArrowLeft') {
+    const pos = overlay.selectionStart ?? 0
+    if (pos === 0) { e.preventDefault(); commitEdit(); moveTo(r, Math.max(c-1,0), 'end'); return }
+  }
+  if (e.key === 'ArrowRight') {
+    const pos = overlay.selectionStart ?? overlay.value.length
+    if (pos === overlay.value.length) { e.preventDefault(); commitEdit(); moveTo(r, Math.min(c+1, lastHeader.length-1), 'start'); return }
+  }
+})
+overlay.addEventListener('blur', () => { commitEdit(); endEdit() })
 
 function ensureExtraBlankRow(rows: string[][], headerLen: number): string[][] {
   const copy = rows.map(r => r.slice())
