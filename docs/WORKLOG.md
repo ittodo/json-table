@@ -99,3 +99,23 @@ Next Steps
 - Add validators and enum mapping demos; surface formatters/parsers hooks.
 - Expand README with examples including fixed-K and CSV download.
 - Add release workflow and Pages automation.
+
+---
+
+Date: 2025-08-29 (Demo UX & CI)
+
+Summary
+- Header order: preserved JSON discovery order; fixed list expansion to index-first (items[0].id, items[0].name, ...).
+- Demo CSV: rendered as HTML table; editable cells with JSON write‑back; always +1 blank row (auto-add on entry).
+- Header editing: editable table headers and a textarea panel (line = column); supports adding new columns (placeholders).
+- Navigation: Arrow Up/Down/Left/Right between cells; active column highlight; moved Header panel next to JSON; Bootstrap styling.
+- Caret reliability: switched to a single overlay <input> editor for stable caret (Chrome/Windows); Enter/Tab/Arrows navigation.
+- Scrolling/overlay: ensure target cell is visible; overlay sized to rect (border-box) with extra headroom to avoid clipping.
+- CI/Pages: fixed YAML syntax; unified artifact path to demo/dist-demo; consolidated Pages workflow; successful deploy to https://ittodo.github.io/json-table/.
+
+Next Steps
+- Overlay polish: dynamic sizing (replace fixed +100px with smarter fit), IME/mobile, smooth scroll.
+- Keyboard: add Shift+Enter/Shift+Tab/Home/End; optional oninput auto-add row.
+- Data typing: parsers/formatters (number/bool/date), null/empty semantics; validators, enum mapping examples.
+- Persistence: save/restore custom headers; JSON Schema support; grid integration for resize/copy/paste.
+- CI/CD: coverage reporting, release workflow (tag→npm publish), Pages triggers for master if needed.
