@@ -1,4 +1,5 @@
-﻿import { init, Flatten, Csv } from '../src/index'
+import { init, Flatten, Csv } from '../src/index'
+import type { GapMode } from '../src/index'
 
 const app = document.getElementById('app')!
 const api = init(app, {
@@ -27,7 +28,18 @@ function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMa
   return { listStrategy: 'dynamic' }
 }
 
-function renderTable(header: string[], rows: string[][]) {
+let lastHeader: string[] = []
+let lastRows: string[][] = []
+let baseIsArray = Array.isArray(api.getJson())
+
+function updateJsonFromRows() {
+  const gap = (selGap.value as GapMode) || 'break'
+  const objs = lastRows.map(r => Flatten.unflattenFromRow(lastHeader, r, gap))
+  const next = baseIsArray ? objs : (objs[0] ?? {})
+  api.setJson(next)
+}
+
+function renderTable(header: string[], rows: string[][], editable = false) {
   // clear
   outCsvTable.innerHTML = ''
   // thead
@@ -42,15 +54,27 @@ function renderTable(header: string[], rows: string[][]) {
   outCsvTable.appendChild(thead)
   // tbody
   const tbody = document.createElement('tbody')
-  for (const r of rows) {
+  rows.forEach((r, ri) => {
     const tr = document.createElement('tr')
     for (let i = 0; i < header.length; i++) {
       const td = document.createElement('td')
       td.textContent = r[i] ?? ''
+      if (editable) {
+        td.contentEditable = 'true'
+        td.dataset.row = String(ri)
+        td.dataset.col = String(i)
+        td.addEventListener('blur', () => {
+          const rr = Number(td.dataset.row)
+          const cc = Number(td.dataset.col)
+          rows[rr][cc] = td.textContent || ''
+          lastRows = rows
+          updateJsonFromRows()
+        })
+      }
       tr.appendChild(td)
     }
     tbody.appendChild(tr)
-  }
+  })
   outCsvTable.appendChild(tbody)
 }
 
@@ -65,7 +89,10 @@ btnCsv.addEventListener('click', () => {
   const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
-  renderTable(header, rows)
+  lastHeader = header
+  lastRows = rows
+  baseIsArray = Array.isArray(json)
+  renderTable(header, rows, true)
 })
 
 btnDownload.addEventListener('click', () => {
