@@ -20,6 +20,7 @@ const outCsvTable = document.getElementById('out-csv-table') as HTMLTableElement
 const btnDownload = document.getElementById('btn-download') as HTMLButtonElement
 const inpK = document.getElementById('inp-k') as HTMLInputElement
 const selGap = document.getElementById('sel-gap') as HTMLSelectElement
+const inpUploadCsv = document.getElementById('inp-upload-csv') as HTMLInputElement
 
 function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMax?: number } {
   const selected = (document.querySelector('input[name="listStrategy"]:checked') as HTMLInputElement)?.value
@@ -33,16 +34,16 @@ function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMa
 let lastHeader: string[] = []
 let lastRows: string[][] = []
 let baseIsArray = Array.isArray(api.getJson())
-let pendingFocus: { r: number; c: number; edge?: 'start' | 'end' } | null = null
+const pendingFocus: { r: number; c: number; edge?: 'start' | 'end' } | null = null
 
 // Overlay input editor (more reliable caret than contentEditable)
 const overlay = document.createElement('input')
 overlay.type = 'text'
 overlay.style.position = 'absolute'
 overlay.style.zIndex = '1000'
-overlay.style.font = '12px/1.4 system-ui'
-overlay.style.padding = '4px 6px'
-overlay.style.border = '1px solid #0d6efd'
+overlay.style.padding = '0'
+overlay.style.border = '0'
+overlay.style.boxShadow = '0 0 0 2px #0d6efd inset'
 overlay.style.borderRadius = '4px'
 overlay.style.boxSizing = 'border-box'
 overlay.style.display = 'none'
@@ -158,7 +159,10 @@ function renderTable(header: string[], rows: string[][], editable = false) {
     const tr = document.createElement('tr')
     for (let i = 0; i < header.length; i++) {
       const td = document.createElement('td')
-      td.textContent = r[i] ?? ''
+      const inner = document.createElement('div')
+      inner.className = 'cell-inner'
+      inner.textContent = r[i] ?? ''
+      td.appendChild(inner)
       if (editable) {
         td.tabIndex = 0
         td.dataset.row = String(ri)
@@ -195,14 +199,26 @@ function startEdit(r: number, c: number, edge: 'start'|'end', seed?: string) {
   editCell = { r, c }
   const td = getCell(r, c)
   if (!td) return
+  // ensure target cell is fully visible (add bottom reserve to avoid clipping)
+  _ensureCellVisible(r, c)
+  // position overlay to align with cell rect
+  const base = (td.querySelector('.cell-inner') as HTMLElement) || td
+  const rect = base.getBoundingClientRect()
+  const cs = getComputedStyle(base)
+  overlay.style.display = 'block'
   overlay.style.left = `${Math.floor(rect.left + window.scrollX)}px`
   overlay.style.top = `${Math.floor(rect.top + window.scrollY)}px`
-  overlay.style.width = `${Math.ceil(rect.width)}px`
-  overlay.style.height = `${Math.ceil(rect.height + 100)}px`
-  overlay.style.top = `${rect.top + window.scrollY}px`
-  overlay.style.width = `${rect.width - 2}px`
-  overlay.style.height = `${rect.height - 2}px`
-  overlay.value = (td.textContent || '').replace(/\u200B/g, '')
+  // copy typography and padding from cell to avoid height mismatch
+  overlay.style.font = cs.font
+  overlay.style.lineHeight = cs.lineHeight
+  overlay.style.paddingTop = cs.paddingTop
+  overlay.style.paddingRight = cs.paddingRight
+  overlay.style.paddingBottom = cs.paddingBottom
+  overlay.style.paddingLeft = cs.paddingLeft
+  // set exact size to cell's border-box to prevent covering next row
+  overlay.style.width = `${base.clientWidth}px`
+  overlay.style.height = `${base.clientHeight}px`
+  overlay.value = ((base.textContent || '')).replace(/\u200B/g, '')
   if (seed) overlay.value = seed
   requestAnimationFrame(() => {
     overlay.focus()
@@ -217,7 +233,11 @@ function commitEdit() {
   const val = overlay.value
   lastRows[r][c] = val
   const td = getCell(r, c)
-  if (td) td.textContent = val
+  if (td) {
+    const inner = td.querySelector('.cell-inner') as HTMLElement | null
+    if (inner) inner.textContent = val
+    else td.textContent = val
+  }
   updateJsonFromRows()
   const before = lastRows.length
   lastRows = ensureExtraBlankRow(lastRows, lastHeader.length)
@@ -321,6 +341,40 @@ btnDownload.addEventListener('click', () => {
   URL.revokeObjectURL(url)
 })
 
+// Upload & parse CSV → update header/rows/table/json
+inpUploadCsv.addEventListener('change', async () => {
+  const file = inpUploadCsv.files?.[0]
+  if (!file) return
+  try {
+    const text = await file.text()
+    const parsed = Csv.parseCsvText(text, { hasHeader: true, skipEmptyLines: true })
+    let header = parsed.header
+    const rows = parsed.rows
+    // Ensure +1 extra index per list group (e.g., items[max+1]) to allow adding next row
+    header = addExtraIndexPerList(header, 1)
+    // Optionally keep previously edited roots
+    header = mergeHeaderWithFallback(header, lastHeader)
+    lastHeader = header
+    // normalize rows to header width
+    let norm = rows.map(r => {
+      const rr = r.slice(0, header.length)
+      while (rr.length < header.length) rr.push('')
+      return rr
+    })
+    norm = ensureExtraBlankRow(norm, header.length)
+    lastRows = norm
+    outHeader.value = header.join('\n')
+    baseIsArray = true
+    renderTable(lastHeader, lastRows, true)
+    // reflect into JSON
+    updateJsonFromRows()
+  } catch (e) {
+    console.error('CSV upload failed:', e)
+  } finally {
+    inpUploadCsv.value = ''
+  }
+})
+
 // Allow editing header lines in the preview box
 function applyHeaderPreviewEdits() {
   const rawLines = (outHeader.value || '').split(/\r?\n/)
@@ -406,30 +460,7 @@ function focusCell(rowIndex: number, colIndex: number, edge: 'start' | 'end' = '
 }
 
 
-function isCaretAtStart(td: HTMLElement): boolean {
-  const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false
-  const node = sel.anchorNode
-  const offset = sel.anchorOffset
-  if (!node || !td.contains(node)) return false
-  if (node.nodeType === Node.TEXT_NODE) return offset === 0
-  return node === td && offset === 0
-}
-
-function isCaretAtEnd(td: HTMLElement): boolean {
-  const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return false
-  const node = sel.anchorNode as any
-  const offset = sel.anchorOffset
-  if (!node || !td.contains(node)) return false
-  if (node.nodeType === Node.TEXT_NODE) {
-    return offset === (node.textContent ? node.textContent.length : 0)
-  }
-  if (node === td) {
-    return offset >= td.childNodes.length
-  }
-  return false
-}
+// removed unused caret helpers to satisfy lint rules
 
 function setActiveColumn(colIndex: number) {
   outCsvTable.querySelectorAll('.col-active').forEach(el => el.classList.remove('col-active'))
@@ -461,18 +492,20 @@ function setActiveColumn(colIndex: number) {
 
 
 
-function ensureCellVisible(r: number, c: number) {
+function _ensureCellVisible(r: number, c: number) {
   const td = getCell(r, c)
   if (!td) return
   const container = outCsvTable.closest('.table-responsive') as HTMLElement | null
   if (container) {
     const tdRect = td.getBoundingClientRect()
     const contRect = container.getBoundingClientRect()
+    // add a base reserve to avoid visual clipping of the last row
+    const reserve = 16
     if (tdRect.bottom > contRect.bottom) {
-      const dy = tdRect.bottom - contRect.bottom + 8
+      const dy = tdRect.bottom - contRect.bottom + reserve
       container.scrollTop += dy
     } else if (tdRect.top < contRect.top) {
-      const dy = contRect.top - tdRect.top + 8
+      const dy = contRect.top - tdRect.top + reserve
       container.scrollTop -= dy
     }
     if (tdRect.right > contRect.right) {
@@ -488,8 +521,9 @@ function ensureCellVisible(r: number, c: number) {
   const rect = td.getBoundingClientRect()
   const vw = window.innerWidth, vh = window.innerHeight
   let wx = 0, wy = 0
-  if (rect.bottom > vh) wy = rect.bottom - vh + 8
-  else if (rect.top < 0) wy = rect.top - 8
+  const reserve = 24
+  if (rect.bottom > vh) wy = rect.bottom - vh + reserve
+  else if (rect.top < 0) wy = rect.top - reserve
   if (rect.right > vw) wx = rect.right - vw + 8
   else if (rect.left < 0) wx = rect.left - 8
   if (wx || wy) window.scrollBy({ left: wx, top: wy, behavior: 'auto' })

@@ -1,0 +1,3 @@
+id,name,stats.hp,stats.mp,items[0].id,items[0].name,items[1].id,items[1].name
+1,Alice,10,5,100,Potion,101,Elixir
+2,"Bob ""The Builder""",12,4,200,"Hi, Potion",,

@@ -12,9 +12,15 @@
       /* header height will be synced to JSON editor via JS */
       /* Keep sticky head behavior with Bootstrap table */
       .table-responsive thead th{position:sticky;top:0;background:#f8f9fa;z-index:1}
+      /* Remove bottom-only spacing per devtools observation */
+      .table-responsive{padding-bottom:0}
+      #out-csv-table{margin-bottom:0}
       /* Active column highlight */
       #out-csv-table .col-active{background:rgba(13,110,253,.06)}
       #out-csv-table .col-active{border-left:2px solid #0d6efd !important; border-right:2px solid #0d6efd !important}
+      /* Ensure empty cells still have reasonable height for overlay */
+      #out-csv-table td{padding:0}
+      #out-csv-table td .cell-inner{padding:6px 8px; min-height:28px; line-height:1.4}
     </style>
   </head>
   <body>
@@ -34,6 +40,10 @@
         </div>
         <div class="col-auto">
           <button id="btn-csv" class="btn btn-primary">Generate CSV</button>
+        </div>
+        <div class="col-auto">
+          <label class="btn btn-outline-primary mb-0" for="inp-upload-csv">Upload CSV</label>
+          <input id="inp-upload-csv" type="file" accept=".csv,text/csv" style="display:none" />
         </div>
         <div class="col-auto">
           <button id="btn-download" class="btn btn-success">Download CSV</button>
