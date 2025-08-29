@@ -4,55 +4,64 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>JsonTable Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
       html,body{height:100%;margin:0}
       #app{padding:16px;box-sizing:border-box}
-      .toolbar{display:flex;gap:8px;align-items:center;margin:8px 0}
-      .panel{display:grid;grid-template-columns:1fr;gap:8px}
-      textarea, pre{width:100%;min-height:120px;padding:8px;box-sizing:border-box;border:1px solid #ddd;border-radius:6px;background:#fafafa}
-      pre{margin:0}
       .caps{font:12px/1.4 system-ui;color:#666}
-      .top{display:flex;gap:12px;align-items:flex-start}
-      .header-pane{flex:0 0 38%; min-width:260px}
       .header-pane textarea{min-height:240px}
-      .app-pane{flex:1}
-      /* simple table styling for CSV preview */
-      .table-wrap{overflow:auto;border:1px solid #ddd;border-radius:6px;background:#fafafa}
-      table{border-collapse:collapse;width:100%;min-width:480px;font:12px/1.4 system-ui}
-      thead th{position:sticky;top:0;background:#f0f3f6}
-      th,td{border:1px solid #e5e7eb;padding:6px 8px;text-align:left;white-space:pre}
+      /* Keep sticky head behavior with Bootstrap table */
+      .table-responsive thead th{position:sticky;top:0;background:#f8f9fa;z-index:1}
     </style>
   </head>
   <body>
-    <div class="top">
-      <div class="app-pane">
-        <div id="app"></div>
+    <div class="container-fluid p-3">
+      <div class="row g-3">
+        <div class="col-md-8">
+          <div id="app" class="border rounded bg-light"></div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2 caps">Header (dynamic)</div>
+          <textarea id="out-header" class="form-control" title="Edit header lines; one column per line"></textarea>
+        </div>
       </div>
-      <div class="header-pane">
-        <div class="caps">Header (dynamic)</div>
-        <textarea id="out-header" title="Edit header lines; one column per line"></textarea>
+      <div class="row align-items-center g-2 mt-3">
+        <div class="col-auto">
+          <button id="btn-header" class="btn btn-outline-secondary">Generate Header</button>
+        </div>
+        <div class="col-auto">
+          <button id="btn-csv" class="btn btn-primary">Generate CSV</button>
+        </div>
+        <div class="col-auto">
+          <button id="btn-download" class="btn btn-success">Download CSV</button>
+        </div>
+        <div class="col-auto caps">List Strategy:</div>
+        <div class="col-auto form-check">
+          <input class="form-check-input" type="radio" name="listStrategy" value="dynamic" id="ls-dyn" checked>
+          <label class="form-check-label" for="ls-dyn">dynamic</label>
+        </div>
+        <div class="col-auto form-check">
+          <input class="form-check-input" type="radio" name="listStrategy" value="fixed" id="ls-fix">
+          <label class="form-check-label" for="ls-fix">fixed</label>
+        </div>
+        <div class="col-auto caps">Fixed K:</div>
+        <div class="col-auto" style="max-width:100px">
+          <input id="inp-k" type="number" min="0" value="3" class="form-control form-control-sm">
+        </div>
+        <div class="col-auto caps">Gap Mode:</div>
+        <div class="col-auto" style="max-width:160px">
+          <select id="sel-gap" class="form-select form-select-sm">
+            <option value="break" selected>break</option>
+            <option value="sparse">sparse</option>
+          </select>
+        </div>
       </div>
-    </div>
-    <div class="toolbar">
-      <button id="btn-header">Generate Header</button>
-      <button id="btn-csv">Generate CSV</button>
-      <button id="btn-download">Download CSV</button>
-      <label class="caps" style="margin-left:12px">List Strategy:</label>
-      <label><input type="radio" name="listStrategy" value="dynamic" checked> dynamic</label>
-      <label><input type="radio" name="listStrategy" value="fixed"> fixed</label>
-      <label class="caps" style="margin-left:12px">Fixed K:</label>
-      <input id="inp-k" type="number" min="0" value="3" style="width:64px">
-      <label class="caps" style="margin-left:12px">Gap Mode:</label>
-      <select id="sel-gap">
-        <option value="break" selected>break</option>
-        <option value="sparse">sparse</option>
-      </select>
-    </div>
-    <div class="panel">
-      <div>
-        <div class="caps">CSV Preview (Table)</div>
-        <div class="table-wrap">
-          <table id="out-csv-table"></table>
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="mb-2 caps">CSV Preview (Table)</div>
+          <div class="table-responsive border rounded bg-light">
+            <table id="out-csv-table" class="table table-sm table-striped table-hover align-middle"></table>
+          </div>
         </div>
       </div>
     </div>
