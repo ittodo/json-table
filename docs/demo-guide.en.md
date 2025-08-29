@@ -55,9 +55,10 @@ This guide explains how to use the demo app (./demo) to try and validate the JSO
 - Examples: `items[0].id`, `user.name`, `stats.hp`.
 - Arrays expand as `root[i].tail`. The demo adds +1 index per list group for easier insertion.
 
-## Sample CSV
-- See `demo/sample.csv` with quoting/comma examples.
-- Use Upload CSV to load it and verify table ↔ JSON sync.
+## Sample Data
+- CSV: `demo/sample.csv` (includes quoting/comma examples).
+- JSON: `demo/sample.json` (includes nested lists like `items[1].p[0].a`).
+- You can upload CSV or paste JSON into the editor, then Generate Header/CSV.
 
 ## Troubleshooting
 - Last-row clipping: the demo applies min cell height / overlay alignment / scroll reserve; tweak CSS if your environment differs.
