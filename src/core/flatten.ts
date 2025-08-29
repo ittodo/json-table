@@ -72,9 +72,39 @@ function toStringValue(v: any): string {
   return JSON.stringify(v)
 }
 
-export function buildDynamicHeaderFromJson(json: any | any[]): { header: string[]; listMaxes: ListMaxes } {
+export interface BuildHeaderOptions {
+  listStrategy?: 'dynamic' | 'fixed'
+  fixedListMax?: number
+}
+
+/**
+ * Build a header from json using either dynamic or fixed list strategy.
+ * - dynamic: expands list indices based on observed data lengths
+ * - fixed: expands every list placeholder [0] up to fixedListMax (default 0)
+ */
+export function buildHeaderFromJson(
+  json: any | any[],
+  opts: BuildHeaderOptions = {}
+): { header: string[]; listMaxes: ListMaxes } {
   const { prototypeHeader, listMaxes } = scanSchema(json)
+  const strategy = opts.listStrategy ?? 'dynamic'
+  if (strategy === 'fixed') {
+    const K = Math.max(0, opts.fixedListMax ?? 0)
+    const fixedMaxes: ListMaxes = {}
+    for (const col of prototypeHeader) {
+      const m = col.match(/^(.*)\[(\d+)\]/)
+      if (m) {
+        const root = m[1]
+        fixedMaxes[root] = Math.max(fixedMaxes[root] || 0, K)
+      }
+    }
+    return { header: buildHeader(prototypeHeader, fixedMaxes), listMaxes: fixedMaxes }
+  }
   return { header: buildHeader(prototypeHeader, listMaxes), listMaxes }
+}
+
+export function buildDynamicHeaderFromJson(json: any | any[]): { header: string[]; listMaxes: ListMaxes } {
+  return buildHeaderFromJson(json, { listStrategy: 'dynamic' })
 }
 
 export function flattenToRow(obj: any, header: string[]): string[] {

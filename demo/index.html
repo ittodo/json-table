@@ -19,6 +19,17 @@
     <div class="toolbar">
       <button id="btn-header">Generate Header</button>
       <button id="btn-csv">Generate CSV</button>
+      <button id="btn-download">Download CSV</button>
+      <label class="caps" style="margin-left:12px">List Strategy:</label>
+      <label><input type="radio" name="listStrategy" value="dynamic" checked> dynamic</label>
+      <label><input type="radio" name="listStrategy" value="fixed"> fixed</label>
+      <label class="caps" style="margin-left:12px">Fixed K:</label>
+      <input id="inp-k" type="number" min="0" value="3" style="width:64px">
+      <label class="caps" style="margin-left:12px">Gap Mode:</label>
+      <select id="sel-gap">
+        <option value="break" selected>break</option>
+        <option value="sparse">sparse</option>
+      </select>
     </div>
     <div class="panel">
       <div>

@@ -14,18 +14,47 @@ const btnHeader = document.getElementById('btn-header') as HTMLButtonElement
 const btnCsv = document.getElementById('btn-csv') as HTMLButtonElement
 const outHeader = document.getElementById('out-header') as HTMLPreElement
 const outCsv = document.getElementById('out-csv') as HTMLTextAreaElement
+const btnDownload = document.getElementById('btn-download') as HTMLButtonElement
+const inpK = document.getElementById('inp-k') as HTMLInputElement
+const selGap = document.getElementById('sel-gap') as HTMLSelectElement
+
+function currentListStrategy(): { listStrategy: 'dynamic' | 'fixed'; fixedListMax?: number } {
+  const selected = (document.querySelector('input[name="listStrategy"]:checked') as HTMLInputElement)?.value
+  if (selected === 'fixed') {
+    const k = Math.max(0, Number(inpK.value || 0))
+    return { listStrategy: 'fixed', fixedListMax: k }
+  }
+  return { listStrategy: 'dynamic' }
+}
 
 btnHeader.addEventListener('click', () => {
   const json = api.getJson()
-  const { header } = Flatten.buildDynamicHeaderFromJson(json)
+  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   outHeader.textContent = header.join('\n')
 })
 
 btnCsv.addEventListener('click', () => {
   const json = api.getJson()
-  const { header } = Flatten.buildDynamicHeaderFromJson(json)
+  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
   const arr = Array.isArray(json) ? json : [json]
   const rows = arr.map(r => Flatten.flattenToRow(r, header))
   outCsv.value = Csv.toCsv(header, rows, { sep: ',', bom: false, newline: '\n' })
+})
+
+btnDownload.addEventListener('click', () => {
+  const json = api.getJson()
+  const { header } = Flatten.buildHeaderFromJson(json, currentListStrategy())
+  const arr = Array.isArray(json) ? json : [json]
+  const rows = arr.map(r => Flatten.flattenToRow(r, header))
+  const csv = Csv.toCsv(header, rows, { sep: ',', bom: true, newline: '\r\n' })
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'data.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 })
 

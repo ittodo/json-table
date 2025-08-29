@@ -42,9 +42,22 @@ export function init(container: HTMLElement, options: InitOptions = {}): JsonTab
       editor.value = JSON.stringify(json, null, 2)
       options.onChange?.({ json, errors: [] })
     },
-    getCsv() {
-      // stub
-      return ''
+    getCsv(csvOpts) {
+      try {
+        const json = this.getJson()
+        const arr = Array.isArray(json) ? json : [json]
+        const Flatten = require('./core/flatten') as typeof import('./core/flatten')
+        const Csv = require('./core/export') as typeof import('./core/export')
+        const { header } = Flatten.buildHeaderFromJson(json, {
+          listStrategy: options.listStrategy ?? 'dynamic',
+          fixedListMax: options.fixedListMax,
+        })
+        const rows = arr.map(r => Flatten.flattenToRow(r, header))
+        return Csv.toCsv(header, rows, csvOpts)
+      } catch (e) {
+        options.onError?.(e as Error)
+        return ''
+      }
     },
     destroy() {
       container.innerHTML = ''

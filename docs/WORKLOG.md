@@ -76,3 +76,26 @@ Next Steps
 Notes
 - GitHub Pages requires enabling in repo Settings → Pages → Source = GitHub Actions.
 - The demo uses a minimal static server for consistent local preview across environments.
+
+---
+
+Date: 2025-08-29
+
+Summary
+- Added fixed-K header support via `Flatten.buildHeaderFromJson(json, { listStrategy, fixedListMax })` while keeping `buildDynamicHeaderFromJson` for backward compatibility.
+- Updated demo UI: list strategy toggle (dynamic/fixed), fixed K input, and CSV Download button.
+- Wired demo to use the new header builder; CSV preview/download reflect chosen strategy.
+- Implemented `getCsv` in public API (`init().getCsv`) using core flatten/export pipeline.
+- Fixed BOM issues in `package.json` (and ensured PostCSS config loads cleanly) so tests run.
+
+How to Run Locally
+1) `npm install`
+2) Dev server: `npm run dev` → http://localhost:5173/demo/index.html
+3) Demo CSV download uses BOM + CRLF for broad compatibility.
+4) Unit tests: `npm test` (now passing).
+
+Next Steps
+- Wire GapMode (break/sparse) into unflatten pathways and expose in demo.
+- Add validators and enum mapping demos; surface formatters/parsers hooks.
+- Expand README with examples including fixed-K and CSV download.
+- Add release workflow and Pages automation.

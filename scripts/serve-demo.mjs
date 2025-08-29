@@ -4,7 +4,9 @@ import path from "path"
 import url from "url"
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
-const root = path.resolve(__dirname, "..", "dist-demo")
+// Serve demo build output (vite build demo --outDir dist-demo)
+// Vite runs with root = demo, so output lives under demo/dist-demo
+const root = path.resolve(__dirname, "..", "demo", "dist-demo")
 const port = process.env.PORT ? Number(process.env.PORT) : 5179
 
 const mime = {
@@ -39,6 +41,6 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(port, () => {
-  console.log(`Serving dist-demo on http://localhost:${port}`)
+  console.log(`Serving demo/dist-demo on http://localhost:${port}`)
   console.log(`Root: ${root}`)
 })
