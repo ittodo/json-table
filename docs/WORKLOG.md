@@ -119,3 +119,30 @@ Next Steps
 - Data typing: parsers/formatters (number/bool/date), null/empty semantics; validators, enum mapping examples.
 - Persistence: save/restore custom headers; JSON Schema support; grid integration for resize/copy/paste.
 - CI/CD: coverage reporting, release workflow (tag→npm publish), Pages triggers for master if needed.
+
+---
+
+Date: 2025-08-29 (CSV Upload, Header Normalization, UX Polish)
+
+Summary
+- CSV Upload: added `papaparse` + `Csv.parseCsvText(text, { sep, hasHeader, skipEmptyLines })`; file input in demo to load CSV → header/rows/JSON 업데이트.
+- Header normalization: generic subtree handling for any `.prop[<n>]` tails (no hardcoded keys). Ensures per-parent (e.g., `items`) ordering as: per-index base cols → union child tails, placed right after each `items[k]` block.
+- +1 index expansion: uniform “+1” columns for each list root and immediate child lists (e.g., `items[*]`, `items[*].effects[*]`) so users can add next entries immediately.
+- Schema scan fix: `scanSchema` now unions array tails across all elements (not only first) so heterogeneous arrays (e.g., effects vs materials) are included in prototype header.
+- Overlay/editor fixes: precise overlay sizing to cell client box; removed bottom padding/margin; added min-height via `.cell-inner` to prevent last row clipping; ensured visible scrolling with reserve.
+- Lint/CI: resolved unused/let→const issues; renamed helpers; build now green on Actions.
+- Docs: demo guide in EN/KR; refreshed `demo/sample.json` with realistic fields (effects/materials); added `demo/sample.csv`.
+- UI polish: vertical column separators in CSV preview for better legibility.
+
+How to Use
+1) Upload CSV: first row as header → union/normalize columns → last blank row auto-added → JSON sync via unflatten.
+2) Generate Header/CSV: from JSON (dynamic/fixed K) → per-parent ordering normalized; +1 indices applied.
+3) Download CSV: BOM + CRLF for compatibility.
+
+Notes
+- Normalization order matters: run +1 expansion first, then normalize subtrees so new indices receive child tails and are placed correctly.
+- Generic subtree detection: any tail containing `.[name][index]` is considered a child list subtree.
+
+Next Steps
+- Optionally expose child subtree normalization keys or parent filters via UI (advanced usage).
+- Add delimiter selector and "no header" toggle in demo.
