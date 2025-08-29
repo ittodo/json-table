@@ -12,6 +12,9 @@
       /* header height will be synced to JSON editor via JS */
       /* Keep sticky head behavior with Bootstrap table */
       .table-responsive thead th{position:sticky;top:0;background:#f8f9fa;z-index:1}
+      /* Active column highlight */
+      #out-csv-table .col-active{background:rgba(13,110,253,.06)}
+      #out-csv-table .col-active{border-left:2px solid #0d6efd !important; border-right:2px solid #0d6efd !important}
     </style>
   </head>
   <body>
@@ -68,3 +71,4 @@
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
+
