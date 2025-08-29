@@ -39,6 +39,16 @@ function updateJsonFromRows() {
   api.setJson(next)
 }
 
+// keep header textarea height equal to JSON editor height
+function syncHeaderHeight() {
+  const editor = document.getElementById('jt-editor') as HTMLTextAreaElement | null
+  if (!editor) return
+  outHeader.style.height = editor.clientHeight + 'px'
+}
+// initial sync (after init render)
+setTimeout(syncHeaderHeight, 0)
+window.addEventListener('resize', syncHeaderHeight)
+
 function mergeHeaderWithFallback(current: string[], prev: string[]): string[] {
   if (!prev.length) return current
   const out = current.slice()
