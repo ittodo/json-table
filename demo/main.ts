@@ -153,7 +153,14 @@ function renderTable(header: string[], rows: string[][], editable = false) {
           const cc = Number(td.dataset.col)
           rows[rr][cc] = td.textContent || ''
           lastRows = rows
+          // write back JSON
           updateJsonFromRows()
+          // auto-add a new blank row if the last row now has any content
+          const beforeLen = lastRows.length
+          lastRows = ensureExtraBlankRow(lastRows, header.length)
+          if (lastRows.length !== beforeLen) {
+            renderTable(lastHeader, lastRows, true)
+          }
         })
       }
       tr.appendChild(td)
