@@ -198,7 +198,7 @@ function startEdit(r: number, c: number, edge: 'start'|'end', seed?: string) {
   overlay.style.left = `${Math.floor(rect.left + window.scrollX)}px`
   overlay.style.top = `${Math.floor(rect.top + window.scrollY)}px`
   overlay.style.width = `${Math.ceil(rect.width)}px`
-  overlay.style.height = `${Math.ceil(rect.height)}px`
+  overlay.style.height = `${Math.ceil(rect.height + 100)}px`
   overlay.style.top = `${rect.top + window.scrollY}px`
   overlay.style.width = `${rect.width - 2}px`
   overlay.style.height = `${rect.height - 2}px`
