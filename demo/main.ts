@@ -171,6 +171,26 @@ function normalizeAndPropagateChildSubtree(header: string[]): string[] {
     if (m && parents.includes(m[1])) remove.add(col)
   }
   const filtered = header.filter(col => !remove.has(col))
+  // for each group, also compute +1 index per child list (immediate child like .prop[0]...)
+  for (const g of groups.values()) {
+    const seenOrder: string[] = []
+    const maxByKey: Map<string, number> = new Map()
+    for (const t of g.unionTails) {
+      const m2 = t.match(/^(\.[^.]+)\[(\d+)\](.*)$/)
+      if (!m2) continue
+      const key = m2[1] + '|' + m2[3] // group by property + tail suffix
+      const idx = Number(m2[2])
+      if (!seenOrder.includes(key)) seenOrder.push(key)
+      maxByKey.set(key, Math.max(maxByKey.get(key) ?? -1, idx))
+    }
+    for (const key of seenOrder) {
+      const [prop, suffix] = key.split('|')
+      const max = maxByKey.get(key)
+      if (max == null) continue
+      const nextTail = `${prop}[${max + 1}]${suffix}`
+      if (!g.unionTails.includes(nextTail)) g.unionTails.push(nextTail)
+    }
+  }
   // build normalized chunks and insert at earliest parent position
   const chunks = parents.map(p => groups.get(p)!).sort((a, b) => b.firstPos - a.firstPos)
   const out = filtered.slice()
